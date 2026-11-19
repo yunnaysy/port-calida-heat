@@ -10,7 +10,9 @@ export function createCombat(player, wanted, particles, audio, notify, ownedWeap
     get ammunition() { return ammunition[selected]; },
     get owned() { return owned; },
     equip(index) {
-      if (owned[index] && index >= 0 && index < WEAPONS.length) { selected = index; notify(`${WEAPONS[index].name} · EQUIPPED`); }
+      if (owned[index] && index >= 0 && index < WEAPONS.length) {
+        selected = index; audio.weaponSwitch(); notify(`${WEAPONS[index].name} · EQUIPPED`);
+      }
     },
     unlock(index) {
       owned[index] = true; ammunition[index] = index === 2 ? 120 : 20; this.equip(index);

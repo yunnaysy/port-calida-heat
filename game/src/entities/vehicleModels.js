@@ -1,8 +1,13 @@
 import * as THREE from 'three';
 
-const carPaint = color => new THREE.MeshStandardMaterial({ color, roughness: .34, metalness: .25 });
+const carPaint = color => new THREE.MeshPhysicalMaterial({
+  color, roughness: .18, metalness: .52, clearcoat: .95, clearcoatRoughness: .12, envMapIntensity: 1.65,
+});
 const rubber = new THREE.MeshStandardMaterial({ color: 0x202426, roughness: .9 });
-const glass = new THREE.MeshStandardMaterial({ color: 0x31535a, roughness: .18, metalness: .18, transparent: true, opacity: .84 });
+const glass = new THREE.MeshPhysicalMaterial({
+  color: 0x31535a, roughness: .1, metalness: .18, clearcoat: .72,
+  transparent: true, opacity: .44, envMapIntensity: 1.8,
+});
 const glowCanvas = document.createElement('canvas');
 glowCanvas.width = 64; glowCanvas.height = 64;
 const glowContext = glowCanvas.getContext('2d');
@@ -37,10 +42,15 @@ export function createVehicleModel(kind = 'coupe', color = 0xc36c4f) {
   bumper.position.set(0, .8, -length * .49); root.add(bumper);
   const lamps = new THREE.MeshStandardMaterial({ color: 0xffe6aa, emissive: 0xffd079, emissiveIntensity: 1.3 });
   const brake = new THREE.MeshStandardMaterial({ color: 0xea574a, emissive: 0x9b160b, emissiveIntensity: 1 });
+  const wheels = [];
   for (const side of [-1, 1]) {
     const tire = new THREE.Mesh(new THREE.CylinderGeometry(.63, .63, .38, 12), rubber);
     tire.rotation.z = Math.PI / 2; tire.position.set(side * (width / 2 - .08), .65, -length * .28); root.add(tire);
     const rear = tire.clone(); rear.position.z = length * .31; root.add(rear);
+    wheels.push(tire, rear);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(.26, .26, .4, 10), new THREE.MeshStandardMaterial({ color: 0xb9b8ad, metalness: .7, roughness: .32 }));
+    hub.rotation.z = Math.PI / 2; hub.position.set(side * (width / 2 - .08), .65, -length * .28); root.add(hub);
+    const rearHub = hub.clone(); rearHub.position.z = length * .31; root.add(rearHub);
     const headlight = new THREE.Mesh(new THREE.BoxGeometry(.8, .25, .12), lamps);
     headlight.position.set(side * width * .31, kind === 'coupe' ? 1.16 : 1.25, -length * .5); root.add(headlight);
     const taillight = new THREE.Mesh(new THREE.BoxGeometry(.66, .25, .12), brake);
@@ -58,7 +68,9 @@ export function createVehicleModel(kind = 'coupe', color = 0xc36c4f) {
     labelContext.fillStyle = '#e9e5d7'; labelContext.fillRect(0, 0, 256, 64);
     labelContext.fillStyle = '#17657b'; labelContext.font = '900 42px sans-serif'; labelContext.textAlign = 'center'; labelContext.textBaseline = 'middle';
     labelContext.fillText('PCPD', 128, 33);
-    const doorBadge = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(labelCanvas), side: THREE.DoubleSide });
+    const labelTexture = new THREE.CanvasTexture(labelCanvas);
+    labelTexture.colorSpace = THREE.SRGBColorSpace;
+    const doorBadge = new THREE.MeshBasicMaterial({ map: labelTexture, side: THREE.DoubleSide });
     for (const side of [-1, 1]) {
       const doorStripe = new THREE.Mesh(new THREE.BoxGeometry(.06, .3, length * .38), stripe);
       doorStripe.position.set(side * (width / 2 + .02), 1.15, .12); root.add(doorStripe);
@@ -89,5 +101,6 @@ export function createVehicleModel(kind = 'coupe', color = 0xc36c4f) {
   }
   root.userData.kind = kind; root.userData.width = width; root.userData.length = length;
   root.userData.headlightMaterial = lamps;
+  root.userData.wheels = wheels;
   return root;
 }

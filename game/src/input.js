@@ -1,6 +1,10 @@
 export function createInput() {
   const keys = new Set(), pressed = new Set();
   let mouseDown = false;
+  const bindings = {
+    forward: 'KeyW', reverse: 'KeyS', left: 'KeyA', right: 'KeyD',
+    vehicle: 'KeyF', activity: 'KeyE', map: 'KeyM',
+  };
   const blocked = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
   document.addEventListener('keydown', event => {
     if (blocked.has(event.code)) event.preventDefault();
@@ -14,6 +18,10 @@ export function createInput() {
   return {
     down(code) { return keys.has(code); },
     take(code) { const result = pressed.has(code); pressed.delete(code); return result; },
+    downAction(action) { return keys.has(bindings[action]); },
+    takeAction(action) { return this.take(bindings[action]); },
+    bind(action, code) { if (action in bindings && typeof code === 'string') bindings[action] = code; },
+    binding(action) { return bindings[action]; },
     clearPressed() { pressed.clear(); },
     get firing() { return mouseDown; },
   };

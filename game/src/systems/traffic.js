@@ -16,7 +16,7 @@ export function populateTraffic(scene, random) {
       yaw: axis === 'x' ? sign < 0 ? Math.PI / 2 : -Math.PI / 2 : sign < 0 ? Math.PI : 0,
       routeAxis: axis, routeSign: sign,
     });
-    vehicle.cruise = 9 + random() * 5; vehicles.push(vehicle);
+    vehicle.cruise = 9 + random() * 5; vehicle.speed = sign * vehicle.cruise; vehicles.push(vehicle);
   }
   return vehicles;
 }

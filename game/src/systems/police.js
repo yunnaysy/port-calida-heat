@@ -72,21 +72,24 @@ export function tickPolice(police, dt, target, wanted, traffic, notify) {
       }
     }
     const rotorDisc = new THREE.Mesh(new THREE.CircleGeometry(5.2, 32), new THREE.MeshBasicMaterial({ color: 0xc3d2c2, transparent: true, opacity: .14, side: THREE.DoubleSide, depthWrite: false }));
-    rotorDisc.rotation.x = -Math.PI / 2; rotorDisc.position.y = 6.22;
+    rotorDisc.rotation.x = -Math.PI / 2; rotorDisc.position.y = 6.22; rotorDisc.visible = false;
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(.25, 4.8, 29, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xffe6a4, transparent: true, opacity: .14, side: THREE.DoubleSide, depthWrite: false, toneMapped: false }));
     beam.position.set(-.8, -12.5, 0);
+    beam.visible = police.scene.userData.lightingPreset === 'night';
     const searchlight = new THREE.SpotLight(0xffe9ad, 150, 125, Math.PI / 7, .6, 1.2);
     searchlight.position.set(-.8, 4.7, 0); searchlight.target.position.set(-.8, -32, 0);
     const helicopter = new THREE.Group();
     helicopter.add(body, tailBoom, tailFin, tailRotor, cabin, rotor, rotorDisc, skids, beam, searchlight, searchlight.target);
-    rotor.position.y = 6.15; helicopter.userData.rotor = rotor; helicopter.userData.rotorDisc = rotorDisc;
+    rotor.position.y = 6.15;         helicopter.userData.rotor = rotor; helicopter.userData.rotorDisc = rotorDisc;
     helicopter.userData.tailRotor = tailRotor; helicopter.userData.searchlightTarget = searchlight.target;
+    helicopter.userData.searchlightBeam = beam;
     const navLight = new THREE.PointLight(0xff563e, 22, 18); navLight.position.set(-1.6, 5.4, 1.2); helicopter.add(navLight);
     police.scene.add(helicopter); police.helicopter = helicopter;
   }
   if (stars < 4 && police.helicopter) { police.scene.remove(police.helicopter); police.helicopter = null; }
   if (police.helicopter) {
     const heli = police.helicopter;
+    heli.userData.searchlightBeam.visible = police.scene.userData.lightingPreset === 'night';
     const yaw = target.vehicle?.yaw ?? 0;
     const staged = police.showHelicopter;
     heli.position.set(target.position.x - Math.sin(yaw) * (staged ? 28 : 8) + Math.sin(police.time * .18) * 3, staged ? 25 : 29,

@@ -1,5 +1,81 @@
 import * as THREE from 'three';
 
+export function createOceanMaterial(preset = 'golden', reflectionTexture = null) {
+  const palettes = {
+    day: [0x087f9d, 0x04344d, 0x81d8e3],
+    golden: [0x075f7b, 0x031d34, 0xffbd72],
+    night: [0x064264, 0x020d20, 0x5297d5],
+  };
+  const colors = palettes[preset] ?? palettes.golden;
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uShallow: { value: new THREE.Color(colors[0]) },
+      uDeep: { value: new THREE.Color(colors[1]) },
+      uGlint: { value: new THREE.Color(colors[2]) },
+      uEnvironment: { value: reflectionTexture },
+    },
+    vertexShader: `
+      uniform float uTime;
+      varying vec3 vWorldPosition;
+      varying vec3 vWorldNormal;
+      varying float vWave;
+      void main() {
+        vec3 p = position;
+        float phase = uTime * 0.72;
+        float waveA = sin(p.x * 0.075 + phase) * 0.22;
+        float waveB = cos(p.y * 0.052 - phase * 1.31) * 0.15;
+        p.z += waveA + waveB;
+        vec3 localNormal = normalize(vec3(
+          -cos(p.x * 0.075 + phase) * 0.0165,
+          sin(p.y * 0.052 - phase * 1.31) * 0.0078,
+          1.0
+        ));
+        vec4 worldPosition = modelMatrix * vec4(p, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        vWorldNormal = normalize(mat3(modelMatrix) * localNormal);
+        vWave = waveA + waveB;
+        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uShallow;
+      uniform vec3 uDeep;
+      uniform vec3 uGlint;
+      uniform sampler2D uEnvironment;
+      uniform float uTime;
+      varying vec3 vWorldPosition;
+      varying vec3 vWorldNormal;
+      varying float vWave;
+      void main() {
+        float depth = 1.0 - smoothstep(-575.0, -410.0, vWorldPosition.x);
+        vec3 water = mix(uShallow, uDeep, depth);
+        vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+        float fresnel = pow(1.0 - max(dot(normalize(vWorldNormal), viewDirection), 0.0), 2.3);
+        vec3 reflected = reflect(-viewDirection, normalize(vWorldNormal));
+        vec2 environmentUv = vec2(atan(reflected.z, reflected.x) / 6.2831853 + .5,
+          asin(clamp(reflected.y, -.99, .99)) / 3.1415926 + .5);
+        vec3 reflection = pow(texture2D(uEnvironment, environmentUv).rgb, vec3(2.2));
+        float ripple = sin(vWorldPosition.x * 0.12 + vWorldPosition.z * 0.08 + uTime * 1.2) * 0.022;
+        float sunGlint = pow(max(0.0, sin(vWorldPosition.x * 0.027 + vWorldPosition.z * 0.018 + uTime * 0.36)), 15.0);
+        vec3 color = water + vec3(ripple + vWave * 0.035);
+        color = mix(color, reflection + uGlint * .22, fresnel * .66 + sunGlint * .14);
+        gl_FragColor = vec4(color, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `,
+    side: THREE.DoubleSide,
+  });
+  material.userData.setPreset = name => {
+    const palette = palettes[name] ?? palettes.golden;
+    material.uniforms.uShallow.value.setHex(palette[0]);
+    material.uniforms.uDeep.value.setHex(palette[1]);
+    material.uniforms.uGlint.value.setHex(palette[2]);
+  };
+  return material;
+}
+
 const matrixAt = (position, rotation = new THREE.Euler(), scale = new THREE.Vector3(1, 1, 1)) => new THREE.Matrix4().compose(position, new THREE.Quaternion().setFromEuler(rotation), scale);
 function palmLeafGeometry() {
   const centers = [[0, 0], [1, -.18], [2, -.55], [3, -1.2], [4, -2.05], [5, -3.2], [6, -4.7]];
@@ -57,7 +133,21 @@ export function addStreetProps(scene, random) {
   }
   for (let z = -420; z <= 420; z += 45) addPalmInstances(props, -398, z, random, trunks, fronds);
   addBatch(props, new THREE.CylinderGeometry(.33, .58, 8, 7), new THREE.MeshStandardMaterial({ color: 0x8a6547, roughness: 1 }), trunks);
-  addBatch(props, palmLeafGeometry(), new THREE.MeshStandardMaterial({ color: 0x328063, roughness: .9, side: THREE.DoubleSide }), fronds);
+  const palmMaterial = new THREE.MeshStandardMaterial({ color: 0x286344, roughness: .9, side: THREE.DoubleSide });
+  const windUniform = { value: 0 };
+  palmMaterial.onBeforeCompile = shader => {
+    shader.uniforms.uWindTime = windUniform;
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <common>',
+      '#include <common>\nuniform float uWindTime;',
+    ).replace(
+      '#include <begin_vertex>',
+      '#include <begin_vertex>\n#ifdef USE_INSTANCING\ntransformed.x += sin(uWindTime + instanceMatrix[3].x * .024 + instanceMatrix[3].z * .019) * abs(position.y) * .026;\n#endif',
+    );
+  };
+  palmMaterial.customProgramCacheKey = () => 'palm-wind-v1';
+  addBatch(props, palmLeafGeometry(), palmMaterial, fronds);
+  props.userData.windUniform = windUniform;
   const metal = new THREE.MeshStandardMaterial({ color: 0x344c4b, metalness: .5, roughness: .5 });
   addBatch(props, new THREE.CylinderGeometry(.11, .18, 8, 7), metal, lampPosts);
   addBatch(props, new THREE.BoxGeometry(2.4, .14, .14), metal, lampArms);
@@ -87,8 +177,10 @@ export function addStreetProps(scene, random) {
   }
   props.add(shelters);
 
-  const sea = new THREE.Mesh(new THREE.PlaneGeometry(330, 1120), new THREE.MeshStandardMaterial({ color: 0x3c9f9e, roughness: .28, metalness: .12 }));
-  sea.rotation.x = -Math.PI / 2; sea.position.set(-535, -.22, 0); props.add(sea);
+  const seaMaterial = createOceanMaterial(scene.userData.lightingPreset, scene.userData.reflectionTexture);
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(330, 1120, 100, 160), seaMaterial);
+  sea.rotation.x = -Math.PI / 2; sea.position.set(-535, -.22, 0); sea.userData.waterMaterial = seaMaterial;
+  props.userData.waterMaterial = seaMaterial; props.add(sea);
   const beach = new THREE.Mesh(new THREE.PlaneGeometry(100, 1120), new THREE.MeshStandardMaterial({ color: 0xe7c99a, roughness: 1 }));
   beach.rotation.x = -Math.PI / 2; beach.position.set(-430, -.01, 0); props.add(beach);
   const umbrellas = new THREE.Group();

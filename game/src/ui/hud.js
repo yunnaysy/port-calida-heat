@@ -3,15 +3,17 @@ import { WEAPONS } from '../config.js';
 export function createHud() {
   const byId = id => document.getElementById(id);
   const objective = byId('objective-text'), objectiveLabel = byId('objective').querySelector('b'), wanted = byId('wanted');
-  const feed = byId('feed'), toast = byId('toast'), dialogue = byId('dialogue');
+  const feed = byId('feed'), toast = byId('toast'), dialogue = byId('dialogue'), prompt = byId('prompt');
   const radio = byId('radio');
   const feedLines = [];
   let toastTimer = 0, dialogueTimer = 0, radioTimer = 0;
   return {
     notify(message) {
       feedLines.unshift({ text: message, life: 4.5 }); feedLines.length = Math.min(feedLines.length, 4);
+      toast.classList.toggle('mission-complete', message.includes('JOB COMPLETE'));
       toast.textContent = message; toast.style.opacity = '1'; toastTimer = 2.4;
     },
+    setPrompt(message) { prompt.textContent = message; prompt.hidden = !message; },
     dismissToast() { toast.style.opacity = '0'; toastTimer = 0; },
     say(message, duration = 4) {
       dialogue.textContent = message; dialogue.hidden = false; dialogueTimer = duration;

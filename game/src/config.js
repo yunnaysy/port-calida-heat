@@ -1,7 +1,7 @@
 export const CITY = { half: 460, spacing: 92, road: 16, block: 76 };
 export const COLORS = {
-  asphalt: 0x343b3c, sand: 0xe7c99a, sea: 0x399d9d, palm: 0x367863,
-  cream: 0xf0d6af, coral: 0xd8876b, mint: 0x93b9a2, blue: 0x85a9bc,
+  asphalt: 0x30383b, sand: 0xe7c99a, sea: 0x087f9d, palm: 0x286344,
+  cream: 0xd9c3a0, coral: 0xf17e78, mint: 0x76a94b, blue: 0x38c7d9,
 };
 export const WEAPONS = [
   { name: 'BARE HANDS', label: 'UNARMED', damage: 8, range: 3, ammo: Infinity, rate: 0.55 },

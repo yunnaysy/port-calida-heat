@@ -1,18 +1,23 @@
 import * as THREE from 'three';
 import { CITY, COLORS } from '../config.js';
 
-const facade = [0xe8c9a0, 0xd98d70, 0xb9c7ae, 0x91b4ba, 0xd5b994, 0xd5a3a0];
+const facade = [0xd9c3a0, 0xf0a18b, 0xc3b89e, 0x91adb1, 0xe7bd87, 0xd88783];
 
 function windowTexture(random, tint) {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 512;
   const ctx = canvas.getContext('2d');
+  const lights = document.createElement('canvas');
+  lights.width = canvas.width; lights.height = canvas.height;
+  const lightContext = lights.getContext('2d');
   ctx.fillStyle = `#${tint.toString(16).padStart(6, '0')}`; ctx.fillRect(0, 0, 256, 512);
   ctx.fillStyle = '#fff0d5'; ctx.fillRect(0, 8, 256, 9);
   for (let y = 28; y < 500; y += 38) {
     for (let x = 14; x < 248; x += 38) {
-      ctx.fillStyle = random() > .82 ? '#efc77d' : '#29444a';
+      const lit = random() > .78;
+      ctx.fillStyle = lit ? '#d9ad68' : '#243a43';
       ctx.fillRect(x, y, 22, 24);
+      if (lit) { lightContext.fillStyle = '#fff'; lightContext.fillRect(x, y, 22, 24); }
       ctx.fillStyle = 'rgba(255,232,189,.46)'; ctx.fillRect(x + 2, y + 2, 2, 20);
       ctx.fillStyle = 'rgba(18,39,44,.9)'; ctx.fillRect(x - 2, y - 2, 26, 2);
       ctx.fillRect(x - 2, y + 24, 26, 2); ctx.fillRect(x - 2, y - 2, 2, 28);
@@ -20,7 +25,11 @@ function windowTexture(random, tint) {
       ctx.fillStyle = '#ead3ad'; ctx.fillRect(x - 2, y + 24, 26, 3);
     }
   }
-  return new THREE.CanvasTexture(canvas);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const emissiveMap = new THREE.CanvasTexture(lights);
+  emissiveMap.colorSpace = THREE.SRGBColorSpace;
+  return { texture, emissiveMap };
 }
 
 function makeSign(random, text) {
@@ -33,7 +42,9 @@ function makeSign(random, text) {
   ctx.fillStyle = random() > .5 ? '#ffe3a3' : '#f4a478';
   ctx.font = '900 38px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(text, 256, 49);
-  return new THREE.CanvasTexture(canvas);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }
 
 export function addBuildings(scene, random) {
@@ -46,7 +57,13 @@ export function addBuildings(scene, random) {
     const w = 39 + random() * 25, d = 38 + random() * 24;
     const height = 13 + Math.floor(random() * 4) * 5 + (Math.abs(gx) < 2 && Math.abs(gz) < 2 ? 10 : 0);
     const colorIndex = Math.floor(random() * textures.length);
-    const material = new THREE.MeshStandardMaterial({ map: textures[colorIndex], color: facade[colorIndex], roughness: .88 });
+    const material = new THREE.MeshStandardMaterial({
+      map: textures[colorIndex].texture, emissiveMap: textures[colorIndex].emissiveMap,
+      emissive: 0xffb76b, emissiveIntensity: .12, roughness: .78, metalness: .04,
+    });
+    material.userData.dayEmissive = .1;
+    material.userData.nightEmissive = .95;
+    scene.userData.registerNightMaterial?.(material);
     const body = new THREE.Mesh(new THREE.BoxGeometry(w, height, d), material);
     body.position.set(x, height / 2, z); body.castShadow = true; body.receiveShadow = true;
     buildings.add(body);

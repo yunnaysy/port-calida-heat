@@ -21,18 +21,24 @@ import { createActivities } from './systems/activities.js';
 import { createGarage } from './systems/garage.js';
 import { readSave, writeSave } from './systems/saveGame.js';
 import { stageShot } from './shots.js';
+import { EffectComposer } from './rendering/postprocessing.js';
 
 const canvas = document.getElementById('world');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
 renderer.setSize(window.innerWidth, window.innerHeight);
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, .1, 1100);
+const camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, .1, 2600);
+let frameLimit = 0;
 const params = new URLSearchParams(location.search);
-const shot = params.get('shot');
+const requestedShot = params.get('shot');
+const shot = ({ marina: 'onfoot', docks: 'mission' })[requestedShot] ?? requestedShot;
 const seed = Number(params.get('seed')) || 1;
 const random = createRng(seed);
-const city = generateCity(scene, renderer, random);
+const initialPreset = params.get('preset') ?? 'golden';
+document.body.dataset.shot = shot ?? '';
+const city = generateCity(scene, renderer, random, initialPreset);
+const composer = new EffectComposer(renderer, scene, camera, city.sky.glow);
 const player = createPlayer(scene);
 player.mesh.position.set(0, 0, 8);
 const state = { player, cash: 2450, respect: 0, mission: 0, weapons: [true, true, false, false], garage: null };
@@ -55,8 +61,42 @@ const parked = [
 ];
 parked.forEach(car => { car.ai = false; car.speed = 0; });
 parked[0].missionCar = true;
+const titleCar = createVehicle(scene, { kind: 'coupe', color: 0xc52c46, x: -276, z: -16, yaw: 0 });
+titleCar.ai = false;
+const titleDriver = new THREE.Group();
+const driverShirt = new THREE.Mesh(new THREE.BoxGeometry(.52, .68, .38), new THREE.MeshStandardMaterial({ color: 0x28524e, roughness: .8 }));
+driverShirt.position.set(1.02, 1.48, .12); titleDriver.add(driverShirt);
+const driverHead = new THREE.Mesh(new THREE.SphereGeometry(.24, 10, 8), new THREE.MeshStandardMaterial({ color: 0x986346, roughness: .86 }));
+driverHead.position.set(1.12, 2.3, -.02); titleDriver.add(driverHead);
+const driverHair = new THREE.Mesh(new THREE.SphereGeometry(.25, 10, 7, 0, Math.PI * 2, 0, Math.PI * .45), new THREE.MeshStandardMaterial({ color: 0x22221e, roughness: .9 }));
+driverHair.position.set(1.12, 2.4, -.02); titleDriver.add(driverHair);
+titleCar.mesh.add(titleDriver);
+const foregroundPalm = new THREE.Group();
+const palmTrunk = new THREE.Mesh(new THREE.CylinderGeometry(.34, .58, 12, 8), new THREE.MeshStandardMaterial({ color: 0x725440, roughness: .95 }));
+palmTrunk.position.y = 6; palmTrunk.rotation.z = -.12; foregroundPalm.add(palmTrunk);
+const palmFronds = new THREE.Mesh(new THREE.SphereGeometry(4.5, 9, 3), new THREE.MeshStandardMaterial({ color: 0x204e38, roughness: .84, side: THREE.DoubleSide }));
+palmFronds.scale.set(1.6, .18, 1); palmFronds.position.y = 12.1; foregroundPalm.add(palmFronds);
+foregroundPalm.position.set(-292, 0, 12); scene.add(foregroundPalm);
+const dustCanvas = document.createElement('canvas');
+dustCanvas.width = dustCanvas.height = 32;
+const dustContext = dustCanvas.getContext('2d');
+const dustGradient = dustContext.createRadialGradient(16, 16, 1, 16, 16, 16);
+dustGradient.addColorStop(0, 'rgba(255,215,155,.75)'); dustGradient.addColorStop(1, 'rgba(255,181,119,0)');
+dustContext.fillStyle = dustGradient; dustContext.fillRect(0, 0, 32, 32);
+const dustTexture = new THREE.CanvasTexture(dustCanvas);
+const menuDust = [];
+for (let i = 0; i < 20; i++) {
+  const mote = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: dustTexture, color: i % 3 ? 0xffcb89 : 0x9bd5dc, transparent: true,
+    opacity: .14 + random() * .2, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  }));
+  mote.position.set(-286 + random() * 22, 1.4 + random() * 7, -145 + random() * 170);
+  const scale = .35 + random() * .9; mote.scale.set(scale, scale, 1); scene.add(mote);
+  menuDust.push({ mote, baseY: mote.position.y, phase: random() * Math.PI * 2 });
+}
 vehicles.push(...parked);
 const garage = createGarage(scene, vehicles, parked, state);
+const waterMaterials = [city.props.userData.waterMaterial];
 const people = [];
 for (let i = 0; i < 29; i++) {
   const axis = i % 2, lane = Math.floor(random() * 7 - 3) * 92;
@@ -112,20 +152,50 @@ const mission = createMissionSystem(state, message => hud.notify(message), messa
 const combat = createCombat(player, wanted, particles, audio, message => hud.notify(message), state.weapons);
 const menus = createMenus({
   newGame: startNewGame, continueGame, resume, save: saveAtSafehouse, title: goToTitle,
-  respawn, volume: value => audio.setVolume(value), sensitivity: value => follow.setSensitivity(value),
+  respawn, restartMission, volume: value => audio.setVolume(value),
+  mix: (channel, value) => audio.setMix(channel, value),
+  hover: () => audio.uiTick(), startAudio: () => audio.start(),
+  onPause: () => audio.duck(true), onResume: () => audio.duck(false),
+  sensitivity: value => follow.setSensitivity(value),
+  bindKey: (action, code) => input.bind(action, code),
   quality: value => {
-    renderer.shadowMap.enabled = value === 'high';
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, value === 'high' ? 1.65 : 1));
+    const settings = { low: [.8, false, 1300], medium: [1, true, 1800], high: [1.25, true, 2300], ultra: [1.55, true, 2600] };
+    const [scale, shadows, drawDistance] = settings[value] ?? settings.high;
+    renderer.shadowMap.enabled = shadows;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, scale));
     renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
+    camera.far = drawDistance;
+    camera.updateProjectionMatrix();
+    composer.setEnabled(value !== 'low');
+  },
+  shadowQuality: value => {
+    const mapSize = { low: 512, medium: 1024, high: 1536 }[value] ?? 1024;
+    city.sky.sun.shadow.mapSize.set(mapSize, mapSize);
+    city.sky.sun.shadow.needsUpdate = true;
+  },
+  resolutionScale: value => {
+    renderer.setPixelRatio(Math.min((window.devicePixelRatio || 1) * value, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
+  },
+  fpsLimit: value => { frameLimit = Number(value); },
+  invertY: value => follow.setInvertY(value),
+  timeOfDay: value => {
+    const active = city.sky.setPreset(value);
+    waterMaterials.forEach(material => {
+      material.userData.setPreset(active);
+      material.uniforms.uEnvironment.value = scene.userData.reflectionTexture;
+    });
   },
 });
 
 let screen = 'title', last = performance.now(), clock = 0;
-const game = { scene, city, state, player, vehicles, parked, traffic, people, police, gang, courier, wanted, combat, particles, hud, menus, camera: follow, minimap, mission };
+const game = { scene, city, state, player, vehicles, parked, titleCar, foregroundPalm, traffic, people, police, gang, courier, wanted, combat, particles, hud, menus, camera: follow, minimap, mission, waterMaterials };
 Object.defineProperty(game, 'screen', { get: () => screen, set: value => { screen = value; } });
 game.enterVehicle = enterVehicle;
 game.refreshMission = refreshMission;
-let hornCooldown = 0, shotEffectTimer = 0;
+let hornCooldown = 0, shotEffectTimer = 0, impactCooldown = 0, lowHealthCooldown = 0;
 let headlights = false, shootingLock = 0;
 
 function startNewGame() {
@@ -134,13 +204,16 @@ function startNewGame() {
   state.weapons.splice(0, state.weapons.length, true, true, false, false);
   player.mesh.position.set(0, 0, 8);
   beginGame();
+  audio.missionSting();
 }
 
 function beginGame() {
+  titleCar.mesh.visible = false;
+  foregroundPalm.visible = false;
   player.health = 100; player.armour = 35; player.yaw = 0;
   player.onFoot = true; player.vehicle = null; player.mesh.visible = true; wanted.clear();
   follow.state.distance = 13;
-  screen = 'play'; menus.hideAll(); audio.start(); mission.begin(); hud.notify('MARINA ROW · ONE NIGHT TO CHANGE EVERYTHING');
+  screen = 'play'; menus.hideAll(); audio.start(); audio.duck(false); mission.begin(); hud.notify('MARINA ROW · ONE NIGHT TO CHANGE EVERYTHING');
   refreshMission();
 }
 
@@ -158,8 +231,16 @@ function resume() {
   screen = 'play'; menus.hideAll(); last = performance.now(); follow.release();
 }
 
+function restartMission() {
+  screen = 'play'; menus.hideAll(); last = performance.now(); follow.release();
+  if (!mission.completed) mission.begin();
+  refreshMission();
+  hud.notify(mission.completed ? 'STORY COMPLETE · FREE ROAM CONTINUES' : `JOB ${mission.index + 1} · RESTARTED`);
+}
+
 function goToTitle() {
   screen = 'title'; player.mesh.position.set(0, 0, 8); player.yaw = 0;
+  titleCar.mesh.visible = true;
   follow.state.distance = 27; follow.state.yaw = -.18;
   if (player.vehicle) { player.vehicle = null; player.onFoot = true; player.mesh.visible = true; }
   follow.release(); menus.showTitle();
@@ -199,6 +280,7 @@ function enterVehicle(car, silent = false) {
     wanted.addCrime(10, 'vehicle theft');
     hud.notify(`${car.kind.toUpperCase()} LIFTED · PCPD ALERT`);
     hud.showRadio(); audio.radio();
+    audio.vehicleEntry();
   }
   refreshMission();
 }
@@ -295,9 +377,17 @@ function handleInput(dt) {
     }
     document.getElementById('speed-streaks')?.classList.add('active');
   }
-  if (input.take('KeyF')) interact();
-  if (input.take('KeyE')) activities.start(player.vehicle?.mesh.position ?? player.mesh.position, player.vehicle);
-  if (input.take('KeyM')) { screen = 'paused'; menus.showPause(); follow.release(); }
+  if (shot === 'signature' && player.vehicle) {
+    const car = player.vehicle;
+    car.mesh.position.z -= dt * 2.2;
+    car.speed = 2.2;
+    car.mesh.userData.wheels?.forEach(wheel => { wheel.rotation.x -= dt * .7; });
+    input.clearPressed();
+    return;
+  }
+  if (input.takeAction('vehicle')) interact();
+  if (input.takeAction('activity')) activities.start(player.vehicle?.mesh.position ?? player.mesh.position, player.vehicle);
+  if (input.takeAction('map')) { audio.mapOpen(); screen = 'paused'; menus.showPause(); follow.release(); }
   if (input.take('KeyH')) { if (player.vehicle) audio.horn(); hud.notify('HORN · ' + (player.vehicle ? 'A SHORT, RUDE ANSWER' : 'EMPTY AIR')); }
   if (input.take('KeyL')) {
   headlights = !headlights;
@@ -310,9 +400,9 @@ function handleInput(dt) {
   if (input.take('Digit3')) combat.equip(2);
   if (input.take('Digit4')) combat.equip(3);
   if (input.take('Enter')) { audio.start(); audio.radio(); hud.showRadio(); }
-  const moving = input.down('KeyW') || input.down('ArrowUp');
-  const movingBack = input.down('KeyS') || input.down('ArrowDown');
-  const steering = (input.down('KeyD') || input.down('ArrowRight') ? 1 : 0) - (input.down('KeyA') || input.down('ArrowLeft') ? 1 : 0);
+  const moving = input.downAction('forward') || input.down('ArrowUp');
+  const movingBack = input.downAction('reverse') || input.down('ArrowDown');
+  const steering = (input.downAction('right') || input.down('ArrowRight') ? 1 : 0) - (input.downAction('left') || input.down('ArrowLeft') ? 1 : 0);
   if (player.vehicle) {
     const car = player.vehicle;
     const old = car.mesh.position.clone();
@@ -324,6 +414,7 @@ function handleInput(dt) {
     if (blockCollision(car.mesh.position.x, car.mesh.position.z) || car.mesh.position.x < -630 || car.mesh.position.x > 450 || Math.abs(car.mesh.position.z) > 450) {
       car.mesh.position.copy(old); car.speed *= -.25; car.health -= 3;
       particles.burst(old.clone().add(new THREE.Vector3(0, 1.4, 0)), 0xffa66d, 5);
+      if (impactCooldown <= 0) { audio.impact(); impactCooldown = .42; }
     }
     audio.engine(car.speed); player.yaw = car.yaw;
   } else {
@@ -366,11 +457,13 @@ function getMapBlips() {
     { x: 28, z: 36, color: '#f5d276' }, { x: 276, z: -276, color: '#ef9fc5' },
     ...police.cruisers.map(car => ({ x: car.mesh.position.x, z: car.mesh.position.z, color: '#f36b64', radius: 4 })),
     ...gang.filter(person => person.health > 0).map(person => ({ x: person.mesh.position.x, z: person.mesh.position.z, color: '#ff5f56', radius: 4 })),
+    ...(minimap.waypoint ? [{ ...minimap.waypoint, color: '#63d6e5', radius: 5 }] : []),
   ];
 }
 
 function updateGame(dt) {
   clock += dt; shootingLock = Math.max(0, shootingLock - dt); hornCooldown = Math.max(0, hornCooldown - dt);
+  impactCooldown = Math.max(0, impactCooldown - dt); lowHealthCooldown = Math.max(0, lowHealthCooldown - dt);
   if (player.invulnerable > 0) player.invulnerable -= dt;
   handleInput(dt);
   if (screen !== 'play') return;
@@ -404,7 +497,7 @@ function updateGame(dt) {
   }
   const policeVisible = policeClose && policeNearby;
   wanted.tick(dt, policeVisible, Boolean(player.vehicle));
-  if (wanted.stars >= 4) audio.siren();
+  if (wanted.stars >= 4) audio.siren(police.cruisers[0]?.mesh.position, position);
   combat.tick(dt); particles.tick(dt);
   shotEffectTimer -= dt;
   if (shot === 'mission' && shotEffectTimer <= 0) {
@@ -415,9 +508,11 @@ function updateGame(dt) {
     shotEffectTimer = .42;
   }
   mission.tick(dt, position, player.vehicle, wanted, missionTargetMet());
-  if (mission.consumePassed()) { refreshMission(); autosave(); loadContinueState(); }
+  if (mission.consumePassed()) { audio.missionComplete(); refreshMission(); autosave(); loadContinueState(); }
   activities.tick(dt, position);
   const target = player.vehicle?.mesh.position ?? player.mesh.position;
+  if (player.health < 25 && lowHealthCooldown <= 0) { audio.lowHealth(); lowHealthCooldown = 2.8; }
+  hud.setPrompt(contextualPrompt(target));
   missionMarker.position.x = mission.destination[0]; missionMarker.position.z = mission.destination[1];
   missionMarker.rotation.y += dt * .7;
   safeMarker.rotation.y += dt * .5; armsMarker.rotation.y += dt * .6;
@@ -438,6 +533,19 @@ function updateGame(dt) {
   city.sky.glow.position.x = -260 + Math.sin(clock * .007) * 30;
 }
 
+function contextualPrompt(position) {
+  if (player.vehicle) return 'F  ·  EXIT VEHICLE';
+  let nearest = null, nearestDistance = 11;
+  for (const car of vehicles) {
+    const distance = car.mesh.position.distanceTo(position);
+    if (distance < nearestDistance) { nearest = car; nearestDistance = distance; }
+  }
+  if (nearest) return `F  ·  ENTER ${nearest.kind.toUpperCase()}`;
+  if (Math.hypot(position.x + 58, position.z + 55) < 14) return 'F  ·  VISIT CALIDA ARMS';
+  if (Math.hypot(position.x - 28, position.z - 36) < 20 || Math.hypot(position.x - 276, position.z + 276) < 20) return 'E  ·  START ACTIVITY';
+  return '';
+}
+
 function missionTargetMet() {
   const position = player.vehicle?.mesh.position ?? player.mesh.position;
   if (state.mission === 2) return courier.health <= 0 || (player.vehicle && Math.hypot(position.x - 244, position.z - 154) < 12);
@@ -448,12 +556,20 @@ function missionTargetMet() {
 }
 
 function cameraTarget(position, dt = 1 / 60) {
+  if (shot === 'signature') {
+    const drift = Math.sin(clock * .07) * .28;
+    camera.position.lerp(new THREE.Vector3(-282 + drift, 3.9, 25), 1 - Math.exp(-dt * 2.4));
+    camera.lookAt(-276, 1.15, -100);
+    return;
+  }
   const focus = position.clone().add(new THREE.Vector3(0, player.vehicle ? 2 : 2.2, 0));
   follow.update(focus, player.vehicle?.yaw ?? player.yaw, dt, Boolean(player.vehicle));
 }
 
 function draw() {
-  const now = performance.now(), dt = Math.min((now - last) / 1000, .05);
+  const now = performance.now();
+  if (frameLimit > 0 && now - last < 1000 / frameLimit) { requestAnimationFrame(draw); return; }
+  const dt = Math.min((now - last) / 1000, .05);
   last = now;
   if (screen === 'play') updateGame(dt);
   else {
@@ -465,11 +581,38 @@ function draw() {
       if (Math.abs(car.mesh.position.z) > 445) car.mesh.position.z *= -.98;
     }
     const position = player.vehicle?.mesh.position ?? player.mesh.position;
-    if (!(shot === 'title' && screen === 'title')) cameraTarget(position, dt);
+    const cinematicMenu = screen === 'title' && (!shot || shot === 'title' || shot === 'settings');
+    if (cinematicMenu) {
+      const drift = Math.sin(clock * .09);
+      camera.position.lerp(new THREE.Vector3(-282 + drift * 1.2, 4.1 + Math.sin(clock * .06) * .12, 21 + drift * .55), 1 - Math.exp(-dt * 2.2));
+      camera.lookAt(-276 + drift * .35, 1.35, -94);
+      titleCar.mesh.visible = true;
+      titleCar.mesh.position.set(-276 + Math.sin(clock * .12) * 1.2, 0, -18 - Math.sin(clock * .09) * 4);
+      titleCar.yaw = Math.sin(clock * .1) * .025;
+      titleCar.mesh.rotation.y = titleCar.yaw;
+      foregroundPalm.visible = true;
+      menuDust.forEach(({ mote, baseY, phase }) => {
+        mote.visible = true;
+        mote.position.y = baseY + Math.sin(clock * .18 + phase) * .32;
+        mote.position.x += Math.sin(clock * .12 + phase) * dt * .025;
+      });
+    } else {
+      titleCar.mesh.visible = false;
+      foregroundPalm.visible = shot === 'signature';
+      menuDust.forEach(({ mote }) => { mote.visible = shot === 'signature'; });
+      cameraTarget(position, dt);
+    }
     minimap.draw({ x: position.x, z: position.z, yaw: player.yaw, zoom: shot === 'chase' ? 220 : 182 }, getMapBlips());
     hud.update(state, mission, combat, wanted, dt);
   }
-  renderer.render(scene, camera);
+  game.waterMaterials.forEach(material => { material.uniforms.uTime.value = clock; });
+  city.props.userData.windUniform.value = clock;
+  city.sky.dome.position.copy(camera.position);
+  if (screen === 'title' && city.sky.glow.visible) city.sky.glow.position.set(-276, 18, -270);
+  else if (shot === 'signature' && city.sky.glow.visible) city.sky.glow.position.set(-276, 17, -270);
+  else if (screen === 'play') city.sky.glow.position.x = -260 + Math.sin(clock * .007) * 30;
+  if (screen === 'play') titleCar.mesh.visible = false;
+  composer.render(camera, shot === 'signature' || screen === 'title', scene.userData.lightingPreset);
   requestAnimationFrame(draw);
 }
 
@@ -482,11 +625,13 @@ loadContinueState();
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
 });
 if (shot) {
-  stageShot(shot, game);
+  stageShot(shot, game, initialPreset);
   document.querySelectorAll('.screen').forEach(element => { element.hidden = true; });
   if (shot === 'title') menus.showTitle();
+  if (shot === 'settings') menus.showSettings();
   window.__shotReady = false;
   requestAnimationFrame(() => { requestAnimationFrame(() => { window.__shotReady = true; }); });
 } else menus.showTitle();

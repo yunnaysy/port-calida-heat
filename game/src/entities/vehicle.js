@@ -29,6 +29,7 @@ export function tickVehicle(vehicle, dt) {
     vehicle.mesh.position.addScaledVector(vehicleForward(vehicle.yaw), vehicle.speed * dt);
   }
   vehicle.mesh.rotation.y = vehicle.yaw;
+  for (const wheel of vehicle.mesh.userData.wheels ?? []) wheel.rotation.x += vehicle.speed * dt / .63;
   vehicle.sirenPhase += dt * 13;
   if (vehicle.police) {
     const pulse = Math.sin(vehicle.sirenPhase) > 0;

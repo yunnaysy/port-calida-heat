@@ -1,20 +1,21 @@
 import * as THREE from 'three';
 
 export function createFollowCamera(camera, canvas) {
-  const state = { yaw: 0, pitch: .12, distance: 13, sensitivity: .0024 };
+  const state = { yaw: 0, pitch: .12, distance: 13, sensitivity: .0024, invertY: false };
   let locked = false;
   canvas.addEventListener('click', () => { if (!locked && !document.querySelector('.screen:not([hidden])')) canvas.requestPointerLock?.(); });
   document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; });
   document.addEventListener('mousemove', event => {
     if (!locked) return;
     state.yaw -= event.movementX * state.sensitivity;
-    state.pitch = THREE.MathUtils.clamp(state.pitch + event.movementY * state.sensitivity, -.25, .6);
+    state.pitch = THREE.MathUtils.clamp(state.pitch + event.movementY * state.sensitivity * (state.invertY ? -1 : 1), -.25, .6);
   });
   canvas.addEventListener('wheel', event => { state.distance = THREE.MathUtils.clamp(state.distance + event.deltaY * .012, 7, 23); });
   return {
     state,
     camera,
     setSensitivity(value) { state.sensitivity = value; },
+    setInvertY(value) { state.invertY = value; },
     release() { if (locked) document.exitPointerLock(); },
     update(target, heading, dt, inCar, snap = false) {
       const yaw = state.yaw + heading;
