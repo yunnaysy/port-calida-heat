@@ -10,19 +10,25 @@ function windowTexture(random, tint) {
   const lights = document.createElement('canvas');
   lights.width = canvas.width; lights.height = canvas.height;
   const lightContext = lights.getContext('2d');
+  const column = 30 + Math.floor(random() * 11);
+  const row = 33 + Math.floor(random() * 12);
+  const windowWidth = Math.floor(column * (.48 + random() * .12));
+  const windowHeight = Math.floor(row * (.54 + random() * .1));
   ctx.fillStyle = `#${tint.toString(16).padStart(6, '0')}`; ctx.fillRect(0, 0, 256, 512);
   ctx.fillStyle = '#fff0d5'; ctx.fillRect(0, 8, 256, 9);
-  for (let y = 28; y < 500; y += 38) {
-    for (let x = 14; x < 248; x += 38) {
+  for (let y = 24; y < 500; y += row) {
+    for (let x = 10; x < 248; x += column) {
       const lit = random() > .78;
       ctx.fillStyle = lit ? '#d9ad68' : '#243a43';
-      ctx.fillRect(x, y, 22, 24);
-      if (lit) { lightContext.fillStyle = '#fff'; lightContext.fillRect(x, y, 22, 24); }
-      ctx.fillStyle = 'rgba(255,232,189,.46)'; ctx.fillRect(x + 2, y + 2, 2, 20);
-      ctx.fillStyle = 'rgba(18,39,44,.9)'; ctx.fillRect(x - 2, y - 2, 26, 2);
-      ctx.fillRect(x - 2, y + 24, 26, 2); ctx.fillRect(x - 2, y - 2, 2, 28);
-      ctx.fillRect(x + 22, y - 2, 2, 28); ctx.fillRect(x + 9, y, 2, 24);
-      ctx.fillStyle = '#ead3ad'; ctx.fillRect(x - 2, y + 24, 26, 3);
+      ctx.fillRect(x, y, windowWidth, windowHeight);
+      if (lit) { lightContext.fillStyle = '#fff'; lightContext.fillRect(x, y, windowWidth, windowHeight); }
+      ctx.fillStyle = 'rgba(255,232,189,.46)'; ctx.fillRect(x + 2, y + 2, 2, windowHeight - 4);
+      ctx.fillStyle = 'rgba(18,39,44,.9)'; ctx.fillRect(x - 2, y - 2, windowWidth + 4, 2);
+      ctx.fillRect(x - 2, y + windowHeight, windowWidth + 4, 2);
+      ctx.fillRect(x - 2, y - 2, 2, windowHeight + 4);
+      ctx.fillRect(x + windowWidth, y - 2, 2, windowHeight + 4);
+      ctx.fillRect(x + Math.floor(windowWidth / 2), y, 2, windowHeight);
+      ctx.fillStyle = '#ead3ad'; ctx.fillRect(x - 2, y + windowHeight, windowWidth + 4, 3);
     }
   }
   const texture = new THREE.CanvasTexture(canvas);
@@ -99,6 +105,35 @@ export function addBuildings(scene, random) {
       ledge.position.set(x, height * .64, z); buildings.add(ledge);
       const rooftop = new THREE.Mesh(new THREE.BoxGeometry(w * .24, 2.8, d * .2), new THREE.MeshStandardMaterial({ color: 0x667775, roughness: .9 }));
       rooftop.position.set(x + w * .18, height + 2.1, z - d * .14); buildings.add(rooftop);
+    }
+    if (random() > .42) {
+      const finMaterial = new THREE.MeshStandardMaterial({
+        color: colorIndex % 2 ? 0xf1d1a5 : 0xe1b383, roughness: .7, metalness: .08,
+      });
+      for (const finX of [-.34, -.17, 0, .17, .34]) {
+        const fin = new THREE.Mesh(new THREE.BoxGeometry(.62, height * .82, .7), finMaterial);
+        fin.position.set(x + w * finX, height * .51, z + d / 2 + .34);
+        buildings.add(fin);
+      }
+    }
+    if (random() > .72 && height > 20) {
+      const tank = new THREE.Group();
+      const tankMaterial = new THREE.MeshStandardMaterial({ color: 0x70827a, metalness: .32, roughness: .62 });
+      const vessel = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.3, 4.2, 10), tankMaterial);
+      vessel.position.y = height + 3.4; tank.add(vessel);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, .28, 10), new THREE.MeshStandardMaterial({ color: 0xc3b08a, metalness: .24, roughness: .52 }));
+      cap.position.y = height + 5.65; tank.add(cap);
+      tank.position.set(x + w * (random() > .5 ? .25 : -.25), 0, z - d * .18);
+      buildings.add(tank);
+    }
+    if (random() > .62) {
+      const ac = new THREE.Group();
+      const housing = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.1, 2.4), new THREE.MeshStandardMaterial({ color: 0x718078, roughness: .76, metalness: .12 }));
+      housing.position.y = height + 1.65; ac.add(housing);
+      const condenser = new THREE.Mesh(new THREE.CylinderGeometry(.68, .68, .12, 8), new THREE.MeshStandardMaterial({ color: 0x344c4b, metalness: .4, roughness: .48 }));
+      condenser.position.set(0, height + 2.72, .15); ac.add(condenser);
+      ac.position.set(x + w * .22, 0, z + d * .2);
+      buildings.add(ac);
     }
     if (random() > .52) {
       const trim = new THREE.Mesh(new THREE.BoxGeometry(.52, height - 2, .5), new THREE.MeshStandardMaterial({ color: 0xf2d6ae, roughness: .86 }));

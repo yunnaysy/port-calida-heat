@@ -93,9 +93,9 @@ export class ShaderPass {
         color += bloom * uBloomStrength;
 
         float shade = 1.0 - smoothstep(.16, .78, calcLuma(color));
-        color += vec3(-.018, -.009, .024) * shade;
+        color += vec3(-.006, -.003, .008) * shade;
         float light = smoothstep(.25, .92, calcLuma(color));
-        color += vec3(.024, .008, -.019) * light;
+        color += vec3(.014, .006, -.012) * light;
         color = (color - .5) * 1.065 + .5;
 
         vec2 ray = uSun - vUv;

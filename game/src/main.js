@@ -191,7 +191,7 @@ const menus = createMenus({
 });
 
 let screen = 'title', last = performance.now(), clock = 0, menuWindowStep = -1;
-const game = { scene, city, state, player, vehicles, parked, titleCar, foregroundPalm, traffic, people, police, gang, courier, wanted, combat, particles, hud, menus, camera: follow, minimap, mission, waterMaterials };
+const game = { scene, city, state, player, vehicles, parked, titleCar, foregroundPalm, traffic, people, police, gang, courier, wanted, combat, particles, hud, menus, camera: follow, minimap, mission, waterMaterials, markers: [missionMarker, safeMarker, armsMarker, taxiMarker, raceMarker] };
 Object.defineProperty(game, 'screen', { get: () => screen, set: value => { screen = value; } });
 game.enterVehicle = enterVehicle;
 game.refreshMission = refreshMission;
@@ -562,6 +562,18 @@ function cameraTarget(position, dt = 1 / 60) {
     camera.lookAt(-276, 1.15, -100);
     return;
   }
+  if (shot === 'mission') {
+    const drift = Math.sin(clock * .045) * .28;
+    camera.position.lerp(new THREE.Vector3(-330 + drift, 5.2, 160), 1 - Math.exp(-dt * 2.4));
+    camera.lookAt(-358, 3.2, 152);
+    return;
+  }
+  if (shot === 'mission') {
+    const drift = Math.sin(clock * .045) * .5;
+    camera.position.lerp(new THREE.Vector3(-330 + drift, 7.5, 194), 1 - Math.exp(-dt * 2));
+    camera.lookAt(-385, 7, 86);
+    return;
+  }
   const focus = position.clone().add(new THREE.Vector3(0, player.vehicle ? 2 : 2.2, 0));
   follow.update(focus, player.vehicle?.yaw ?? player.yaw, dt, Boolean(player.vehicle));
 }
@@ -619,9 +631,11 @@ function draw() {
   game.waterMaterials.forEach(material => { material.uniforms.uTime.value = clock; });
   city.props.userData.windUniform.value = clock;
   city.sky.dome.position.copy(camera.position);
-  if (screen === 'title' && city.sky.glow.visible) city.sky.glow.position.set(-276, 18, -270);
-  else if (shot === 'signature' && city.sky.glow.visible) city.sky.glow.position.set(-276, 17, -270);
-  else if (screen === 'play') city.sky.glow.position.x = -260 + Math.sin(clock * .007) * 30;
+  const cinematicGlow = city.sky.glow.visible && scene.userData.lightingPreset === 'golden'
+    && (screen === 'title' || shot === 'signature');
+  city.sky.glow.visible = cinematicGlow;
+  if (screen === 'title' && cinematicGlow) city.sky.glow.position.set(-276, 18, -270);
+  else if (shot === 'signature' && cinematicGlow) city.sky.glow.position.set(-276, 17, -270);
   if (screen === 'play') titleCar.mesh.visible = false;
   composer.render(camera, shot === 'signature' || screen === 'title', scene.userData.lightingPreset);
   requestAnimationFrame(draw);

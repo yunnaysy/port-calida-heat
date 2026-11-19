@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export function createOceanMaterial(preset = 'golden', reflectionTexture = null) {
   const palettes = {
     day: [0x087f9d, 0x04344d, 0x81d8e3],
-    golden: [0x075f7b, 0x031d34, 0xffbd72],
+    golden: [0x087087, 0x063144, 0xffbd72],
     night: [0x064264, 0x020d20, 0x5297d5],
   };
   const colors = palettes[preset] ?? palettes.golden;
@@ -56,10 +56,11 @@ export function createOceanMaterial(preset = 'golden', reflectionTexture = null)
         vec2 environmentUv = vec2(atan(reflected.z, reflected.x) / 6.2831853 + .5,
           asin(clamp(reflected.y, -.99, .99)) / 3.1415926 + .5);
         vec3 reflection = pow(texture2D(uEnvironment, environmentUv).rgb, vec3(2.2));
+        reflection = mix(uDeep, reflection, .28);
         float ripple = sin(vWorldPosition.x * 0.12 + vWorldPosition.z * 0.08 + uTime * 1.2) * 0.022;
         float sunGlint = pow(max(0.0, sin(vWorldPosition.x * 0.027 + vWorldPosition.z * 0.018 + uTime * 0.36)), 15.0);
         vec3 color = water + vec3(ripple + vWave * 0.035);
-        color = mix(color, reflection + uGlint * .22, fresnel * .66 + sunGlint * .14);
+        color = mix(color, reflection + uGlint * .16, fresnel * .48 + sunGlint * .12);
         gl_FragColor = vec4(color, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>

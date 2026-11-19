@@ -16,93 +16,114 @@ function addPip(enemy) {
 
 function addDockCover(scene, game, preset) {
   const concreteCanvas = document.createElement('canvas');
-  concreteCanvas.width = 512; concreteCanvas.height = 512;
+  concreteCanvas.width = concreteCanvas.height = 512;
   const concreteContext = concreteCanvas.getContext('2d');
-  concreteContext.fillStyle = '#918872'; concreteContext.fillRect(0, 0, 512, 512);
-  concreteContext.strokeStyle = '#5f5b50'; concreteContext.lineWidth = 5;
-  for (let x = 0; x <= 512; x += 128) { concreteContext.beginPath(); concreteContext.moveTo(x, 0); concreteContext.lineTo(x, 512); concreteContext.stroke(); }
-  for (let y = 0; y <= 512; y += 128) { concreteContext.beginPath(); concreteContext.moveTo(0, y); concreteContext.lineTo(512, y); concreteContext.stroke(); }
-  for (let i = 0; i < 36; i++) {
-    const x = (i * 83 + 29) % 512, y = (i * 137 + 61) % 512;
-    concreteContext.fillStyle = i % 2 ? 'rgba(37,49,47,.3)' : 'rgba(239,217,169,.23)';
-    concreteContext.beginPath(); concreteContext.ellipse(x, y, 4 + i % 11, 3 + i % 7, .3, 0, Math.PI * 2); concreteContext.fill();
+  concreteContext.fillStyle = '#555653'; concreteContext.fillRect(0, 0, 512, 512);
+  let seed = 41;
+  for (let i = 0; i < 10500; i++) {
+    seed = seed * 16807 % 2147483647;
+    const x = seed / 2147483647 * 512;
+    seed = seed * 16807 % 2147483647;
+    const y = seed / 2147483647 * 512;
+    const shade = 62 + seed % 50;
+    concreteContext.fillStyle = `rgba(${shade},${shade},${shade - 2},.16)`;
+    concreteContext.fillRect(x, y, 1 + seed % 3, 1 + seed % 2);
+  }
+  for (let i = 0; i < 10; i++) {
+    const x = 35 + (i * 91) % 440, y = 48 + (i * 137) % 420;
+    concreteContext.strokeStyle = 'rgba(30,38,38,.22)'; concreteContext.lineWidth = 2;
+    concreteContext.beginPath(); concreteContext.moveTo(x - 22, y); concreteContext.lineTo(x + 24, y); concreteContext.stroke();
+    const stain = concreteContext.createRadialGradient(x, y, 2, x, y, 35 + i % 4 * 8);
+    stain.addColorStop(0, i % 2 ? 'rgba(18,30,34,.34)' : 'rgba(158,116,76,.24)');
+    stain.addColorStop(1, 'rgba(27,34,36,0)');
+    concreteContext.fillStyle = stain; concreteContext.fillRect(x - 80, y - 70, 160, 140);
   }
   const concrete = new THREE.CanvasTexture(concreteCanvas);
   concrete.colorSpace = THREE.SRGBColorSpace;
-  concrete.wrapS = THREE.RepeatWrapping; concrete.wrapT = THREE.RepeatWrapping;
+  concrete.wrapS = concrete.wrapT = THREE.RepeatWrapping;
   concrete.repeat.set(2, 3);
-  const quay = new THREE.Mesh(new THREE.BoxGeometry(88, .42, 164), new THREE.MeshStandardMaterial({ map: concrete, roughness: .86, metalness: .04 }));
-  quay.position.set(-365, .03, 144); quay.receiveShadow = true; scene.add(quay);
-  const water = createOceanMaterial(preset);
+  const concreteMaterial = new THREE.MeshStandardMaterial({ map: concrete, color: 0xd1c6af, roughness: .84, metalness: .025 });
+  const quay = new THREE.Mesh(new THREE.BoxGeometry(100, .65, 172), concreteMaterial);
+  quay.position.set(-365, -.03, 151); quay.receiveShadow = true; scene.add(quay);
+  const water = createOceanMaterial(preset, scene.userData.reflectionTexture);
+  water.uniforms.uShallow.value.setHex(preset === 'night' ? 0x063655 : 0x075065);
+  water.uniforms.uDeep.value.setHex(0x041c31);
+  water.uniforms.uGlint.value.setHex(preset === 'day' ? 0x54aeb4 : 0xffa866);
   game.waterMaterials.push(water);
-  const sea = new THREE.Mesh(new THREE.PlaneGeometry(92, 170, 35, 60), water);
-  sea.rotation.x = -Math.PI / 2; sea.position.set(-453, .03, 80); scene.add(sea);
-  const paint = [0x9c5145, 0x276d73, 0xc18a52, 0x4c5f6b, 0xd6a75b];
-  const stacks = [[-390, 4, 128], [-390, 10, 128], [-340, 4, 128], [-340, 10, 128],
-    [-399, 4, 98], [-331, 4, 98], [-390, 4, 72], [-340, 4, 72]];
-  const labelCanvas = document.createElement('canvas');
-  labelCanvas.width = 512; labelCanvas.height = 128;
-  const labelContext = labelCanvas.getContext('2d');
-  labelContext.fillStyle = '#182a30'; labelContext.fillRect(0, 0, 512, 128);
-  labelContext.strokeStyle = '#edc57d'; labelContext.lineWidth = 8; labelContext.strokeRect(9, 9, 494, 110);
-  labelContext.fillStyle = '#fff0d2'; labelContext.font = '900 43px sans-serif'; labelContext.textAlign = 'center'; labelContext.textBaseline = 'middle';
-  labelContext.fillText('SOLANA LINES  ·  PIER NINE', 256, 64);
-  const labelTexture = new THREE.CanvasTexture(labelCanvas);
-  labelTexture.colorSpace = THREE.SRGBColorSpace;
-  const labelMaterial = new THREE.MeshBasicMaterial({ map: labelTexture, toneMapped: false });
-  for (let i = 0; i < stacks.length; i++) {
-    const [x, y, z] = stacks[i];
-    const container = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.BoxGeometry(10, 7.5, 22), new THREE.MeshStandardMaterial({ color: paint[i % paint.length], roughness: .78, metalness: .12 }));
-    body.position.set(x, y, z); body.castShadow = true; body.receiveShadow = true; container.add(body);
-    for (let rib = -4; rib <= 4; rib++) {
-      const crease = new THREE.Mesh(new THREE.BoxGeometry(.16, 7.2, .18), new THREE.MeshStandardMaterial({ color: i % 2 ? 0x8db0a5 : 0xe2bc83, roughness: .8 }));
-      crease.position.set(x + rib * 1.15, y, z + 11.08); container.add(crease);
-    }
-    for (const edge of [-1, 1]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(.32, 7.6, .32), new THREE.MeshStandardMaterial({ color: 0xd5c29d, metalness: .22 }));
-      post.position.set(x + edge * 4.75, y, z + 11.16); container.add(post);
-    }
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 1.8), labelMaterial);
-    label.position.set(x, y + 1.8, z + 11.18); container.add(label);
-    scene.add(container);
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(86, 190, 48, 92), water);
+  sea.rotation.x = -Math.PI / 2; sea.position.set(-458, -.1, 151); scene.add(sea);
+  const bollardMaterial = new THREE.MeshStandardMaterial({ color: 0x3c4747, metalness: .58, roughness: .48 });
+  const bollards = new THREE.InstancedMesh(new THREE.CylinderGeometry(.42, .5, 1.5, 10), bollardMaterial, 9);
+  const matrix = new THREE.Matrix4();
+  for (let i = 0; i < 9; i++) {
+    matrix.makeTranslation(-412, .78, 78 + i * 18);
+    bollards.setMatrixAt(i, matrix);
   }
-  const crane = new THREE.Group();
-  const steel = new THREE.MeshStandardMaterial({ color: 0x516a68, metalness: .35, roughness: .58 });
-  for (const x of [-408, -322]) {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(1.8, 17, 1.8), steel); leg.position.set(x, 8.5, 112); crane.add(leg);
-    const brace = new THREE.Mesh(new THREE.BoxGeometry(1.2, 15, 1.2), steel); brace.position.set(x < -360 ? -400 : -330, 7.5, 112); brace.rotation.z = x < -360 ? -.42 : .42; crane.add(brace);
+  bollards.instanceMatrix.needsUpdate = true; bollards.castShadow = true; scene.add(bollards);
+
+  const ribCanvas = document.createElement('canvas');
+  ribCanvas.width = 256; ribCanvas.height = 512;
+  const ribContext = ribCanvas.getContext('2d');
+  const ribGradient = ribContext.createLinearGradient(0, 0, ribCanvas.width, 0);
+  ribGradient.addColorStop(0, '#17282d'); ribGradient.addColorStop(.14, '#98a094');
+  ribGradient.addColorStop(.36, '#2b3b40'); ribGradient.addColorStop(.65, '#a2a292');
+  ribGradient.addColorStop(1, '#1b2b30');
+  ribContext.fillStyle = ribGradient; ribContext.fillRect(0, 0, ribCanvas.width, ribCanvas.height);
+  for (let x = 0; x < 256; x += 12) {
+    ribContext.fillStyle = x % 24 ? 'rgba(7,13,16,.68)' : 'rgba(236,211,162,.5)';
+    ribContext.fillRect(x, 0, 5, 512);
   }
-  const boom = new THREE.Mesh(new THREE.BoxGeometry(91, 1.7, 2), new THREE.MeshStandardMaterial({ color: 0xd2a158, metalness: .22 }));
-  boom.position.set(-365, 14, 112); crane.add(boom);
-  const trolley = new THREE.Mesh(new THREE.BoxGeometry(9, 2.2, 7), steel); trolley.position.set(-365, 12, 112); crane.add(trolley);
-  const hook = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, 8, 6), steel); hook.position.set(-365, 7, 112); crane.add(hook);
-  const workLamp = new THREE.MeshStandardMaterial({
-    color: 0xffd49a, emissive: 0xffad57, emissiveIntensity: preset === 'night' ? 3.2 : .35, toneMapped: false,
+  for (let y = 35; y < 512; y += 107) {
+    ribContext.fillStyle = 'rgba(24,31,34,.38)'; ribContext.fillRect(0, y, 256, 2);
+  }
+  ribContext.fillStyle = '#17272c'; ribContext.fillRect(17, 410, 115, 48);
+  ribContext.strokeStyle = '#d7bd84'; ribContext.lineWidth = 3; ribContext.strokeRect(17, 410, 115, 48);
+  ribContext.fillStyle = '#f1dfbd'; ribContext.font = 'bold 16px sans-serif'; ribContext.fillText('SOLANA LINES', 25, 431);
+  ribContext.font = '12px sans-serif'; ribContext.fillText('PIER NINE', 25, 448);
+  const ribTexture = new THREE.CanvasTexture(ribCanvas);
+  ribTexture.colorSpace = THREE.SRGBColorSpace;
+  const containerColors = [0x8b423d, 0x1d626b, 0xa27839, 0x445667, 0x7d5140, 0x52654d];
+  const containers = [
+    [-388, 4, 150, 15, 8, 24, 0], [-388, 12, 150, 15, 8, 24, 1],
+    [-397, 4, 180, 15, 8, 23, 2], [-397, 12, 180, 15, 8, 23, 3],
+    [-392, 4, 120, 16, 8, 22, 4], [-392, 4, 204, 16, 8, 22, 5],
+  ];
+  containers.forEach(([x, y, z, width, height, length, colorIndex]) => {
+    const material = new THREE.MeshStandardMaterial({ map: ribTexture, color: containerColors[colorIndex], roughness: .58, metalness: .24 });
+    const container = new THREE.Mesh(new THREE.BoxGeometry(width, height, length), material);
+    container.position.set(x, y, z); container.castShadow = true; container.receiveShadow = true; scene.add(container);
+    for (const side of [-1, 1]) {
+      const corner = new THREE.Mesh(new THREE.BoxGeometry(.34, height + .16, .34), bollardMaterial);
+      corner.position.set(x + side * (width / 2 - .25), y, z - length / 2 + .25); scene.add(corner);
+    }
   });
-  for (const x of [-408, -365, -322]) {
-    const bulb = new THREE.Mesh(new THREE.SphereGeometry(.48, 8, 6), workLamp);
-    bulb.position.set(x, 15, 112); crane.add(bulb);
-    const beam = new THREE.PointLight(0xffad62, preset === 'night' ? 650 : 0, 68, 2);
-    beam.position.set(x, 14, 111); crane.add(beam);
+
+  const craneMetal = new THREE.MeshStandardMaterial({ color: 0x49635f, metalness: .42, roughness: .52 });
+  const craneGold = new THREE.MeshStandardMaterial({ color: 0xc59650, metalness: .28, roughness: .54 });
+  for (const x of [-408, -372]) {
+    const gantry = new THREE.Group();
+    for (const z of [116, 187]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(2.2, 20, 2.4), craneMetal);
+      leg.position.set(x, 10, z); gantry.add(leg);
+      const brace = new THREE.Mesh(new THREE.BoxGeometry(1, 15, 1), craneGold);
+      brace.position.set(x, 8, z < 150 ? 124 : 179); brace.rotation.x = z < 150 ? -.42 : .42; gantry.add(brace);
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(8, .75, 4), craneMetal);
+      foot.position.set(x, .38, z); gantry.add(foot);
+    }
+    const boom = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 78), craneGold);
+    boom.position.set(x, 20.4, 151); gantry.add(boom);
+    const rearBoom = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 24), craneMetal);
+    rearBoom.position.set(x + 2.4, 19.5, 151); gantry.add(rearBoom);
+    const cable = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 9, 6), craneMetal);
+    cable.position.set(x, 14.6, 151); gantry.add(cable);
+    const trolley = new THREE.Mesh(new THREE.BoxGeometry(4, 2.4, 4), craneMetal);
+    trolley.position.set(x, 10, 151); gantry.add(trolley);
+    for (let i = -3; i <= 3; i++) {
+      const brace = new THREE.Mesh(new THREE.BoxGeometry(1, 4.4, 1), craneGold);
+      brace.position.set(x, 18, 151 + i * 9); brace.rotation.x = i % 2 ? .55 : -.55; gantry.add(brace);
+    }
+    scene.add(gantry);
   }
-  scene.add(crane);
-  const ship = new THREE.Group();
-  const hullMaterial = new THREE.MeshStandardMaterial({ color: 0x3f6870, roughness: .55, metalness: .2 });
-  const hull = new THREE.Mesh(new THREE.BoxGeometry(43, 10, 88), hullMaterial);
-  hull.position.y = 2.2; ship.add(hull);
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(43.2, .7, 86), new THREE.MeshStandardMaterial({ color: 0xe7d2ab, roughness: .7 }));
-  stripe.position.set(0, 2.5, 0); ship.add(stripe);
-  const bow = new THREE.Mesh(new THREE.ConeGeometry(21, 30, 4), hull.material); bow.rotation.x = Math.PI / 2; bow.position.set(0, 2.2, -53); ship.add(bow);
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(30, 2, 60), new THREE.MeshStandardMaterial({ color: 0x9b6650, roughness: .82 }));
-  deck.position.set(0, 7.5, 2); ship.add(deck);
-  const bridge = new THREE.Mesh(new THREE.BoxGeometry(13, 14, 17), new THREE.MeshStandardMaterial({ color: 0xe7d2ab, roughness: .74 }));
-  bridge.position.set(0, 15, 30); ship.add(bridge);
-  for (let level = 0; level < 2; level++) for (let row = 0; row < 3; row++) {
-    const cargo = new THREE.Mesh(new THREE.BoxGeometry(8, 4.5, 11), new THREE.MeshStandardMaterial({ color: paint[(row + level + 1) % paint.length], roughness: .8 }));
-    cargo.position.set((row - 1) * 9, 11 + level * 4.8, -12 + row * 14); ship.add(cargo);
-  }
-  ship.position.set(-426, 0, 56); ship.scale.setScalar(1.2); scene.add(ship);
 }
 
 function makeStoreSign(text, color) {
@@ -182,7 +203,9 @@ export function stageShot(name, game, preset = 'golden') {
     const car = game.vehicles.find(vehicle => !vehicle.ai && vehicle.kind === 'coupe');
     game.enterVehicle(car, true);
     car.mesh.position.set(-276, 0, 7); car.yaw = 0; car.mesh.rotation.y = 0; car.speed = 13;
-    car.mesh.children[0].material.color.setHex(0xb83f55);
+    car.mesh.traverse(object => {
+      if (object.isMesh && object.material?.userData.carPaint) object.material.color.setHex(0xb83f55);
+    });
     car.mesh.children[2].visible = false;
     addSignatureDriver(car);
     addMarinaShopfronts(game.scene);
@@ -207,8 +230,9 @@ export function stageShot(name, game, preset = 'golden') {
     const car = game.vehicles.find(vehicle => !vehicle.ai && vehicle.kind === 'coupe');
     game.enterVehicle(car, true);
     car.mesh.position.set(-540, 0, 276); car.yaw = -Math.PI / 2; car.mesh.rotation.y = car.yaw; car.speed = 31;
-    const paint = car.mesh.children[0].material;
-    car.mesh.children.forEach(part => { if (part.material === paint) part.material.color.setHex(0xb83c43); });
+    car.mesh.traverse(object => {
+      if (object.isMesh && object.material?.userData.carPaint) object.material.color.setHex(0xb83c43);
+    });
     game.combat.equip(1);
     game.people.forEach(person => { person.mesh.visible = false; });
     game.hud.clearDialogue();
@@ -243,15 +267,6 @@ export function stageShot(name, game, preset = 'golden') {
       vehicle.mesh.position.set(-276 + (index % 2 ? 4.7 : -4.7), 0, -23 - Math.floor(index / 2) * 19);
       vehicle.routeAxis = 'z'; vehicle.routeSign = -1; vehicle.yaw = 0; vehicle.ai = false; vehicle.speed = 0;
     });
-    const beacon = new THREE.Group();
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(.18, 1.15, 16, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xffb93e, transparent: true, opacity: .58, side: THREE.DoubleSide, depthWrite: false, toneMapped: false }));
-    beam.position.y = 8; beacon.add(beam);
-    const glow = new THREE.PointLight(0xffc968, 20, 32); glow.position.y = 3.8; beacon.add(glow);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(3, .19, 8, 24), new THREE.MeshBasicMaterial({ color: 0xffd17c }));
-    ring.rotation.x = Math.PI / 2; ring.position.y = .3; beacon.add(ring);
-    const crown = new THREE.Mesh(new THREE.SphereGeometry(.65, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffe6aa }));
-    crown.position.y = 20; beacon.add(crown);
-    beacon.position.set(-335, 0, -18); game.scene.add(beacon);
     const inletWater = createOceanMaterial(activePreset);
     game.waterMaterials.push(inletWater);
     const inlet = new THREE.Mesh(new THREE.PlaneGeometry(125, 150, 45, 54), inletWater);
@@ -271,7 +286,7 @@ export function stageShot(name, game, preset = 'golden') {
     game.hud.say('LU VARGA  ·  “Marina Row looks pretty from the water. Keep your eyes on the people.”', 40);
     game.state.cash = 3260; game.state.respect = 2;
   } else if (name === 'mission') {
-    position(-365, 157, 0); player.mesh.rotation.y = player.yaw;
+    position(-365, 158, 0); player.mesh.rotation.y = player.yaw;
     game.city.buildings.visible = false;
     game.combat.unlock(2); game.combat.equip(2); player.pistol.visible = true;
     game.camera.state.distance = 12; game.camera.state.yaw = .65;
@@ -337,6 +352,9 @@ export function stageShot(name, game, preset = 'golden') {
   } else if (name === 'signature') {
     game.camera.camera?.position.set(-282, 3.9, 25);
     game.camera.camera?.lookAt(-276, 1.15, -100);
+  } else if (name === 'mission') {
+    game.camera.camera?.position.set(-330, 7.5, 194);
+    game.camera.camera?.lookAt(-385, 7, 86);
   } else {
     game.camera.update(target.clone().add(new THREE.Vector3(0, player.vehicle ? 2 : 2.2, 0)), player.vehicle?.yaw ?? player.yaw, 1, Boolean(player.vehicle), true);
   }

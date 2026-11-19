@@ -5,14 +5,14 @@ function makeAsphalt() {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 512;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#30383b'; ctx.fillRect(0, 0, 512, 512);
+  ctx.fillStyle = '#414648'; ctx.fillRect(0, 0, 512, 512);
   let seed = 811;
   for (let i = 0; i < 14500; i++) {
     seed = (seed * 16807) % 2147483647;
     const x = seed / 2147483647 * 512;
     seed = (seed * 16807) % 2147483647;
     const y = seed / 2147483647 * 512;
-    const shade = 27 + seed % 42;
+    const shade = 38 + seed % 36;
     ctx.fillStyle = `rgba(${shade},${shade + 3},${shade + 4},${.12 + seed % 25 / 100})`;
     ctx.fillRect(x, y, 1 + seed % 3, 1 + seed % 2);
   }
