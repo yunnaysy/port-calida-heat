@@ -3,17 +3,70 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<meta name="theme-color" content="#10232a">
+<link rel="icon" href="data:,">
+<title>PORT CALIDA HEAT</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
-  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-synthesis:none}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#d78c59;color:#fff}
+body{user-select:none}#world{position:fixed;inset:0;width:100%;height:100%;display:block}
+#ui{position:fixed;inset:0;pointer-events:none;text-shadow:0 2px 8px #081519b8}
+.topline{position:absolute;top:24px;left:30px;display:flex;align-items:center;gap:14px;font-size:12px;letter-spacing:.18em;font-weight:800}
+.seal{width:37px;height:37px;border:1px solid #fff9;border-radius:50%;display:grid;place-items:center;color:#ffd98b;font-size:11px}
+.district{color:#f5d69c;font-size:10px;letter-spacing:.2em}
+#objective{position:absolute;left:32px;top:91px;width:345px;padding:13px 15px;border-left:3px solid #ffbc65;background:linear-gradient(90deg,#081b21d9,#081b2100);font-size:13px;line-height:1.5}
+#objective b{display:block;color:#ffcb78;font-size:9px;letter-spacing:.2em;margin-bottom:4px}
+#minimap{position:absolute;right:28px;top:24px;width:174px;height:174px;border:2px solid #f9dfae;border-radius:50%;box-shadow:0 5px 24px #08151980;background:#101b1d}
+.vitals{position:absolute;left:31px;bottom:30px;width:250px}
+.barrow{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:9px;letter-spacing:.15em;font-weight:800}
+.bar{height:6px;width:137px;background:#172b2de8;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;width:100%;background:#75d7b2}
+#armour-fill{background:#77c9eb}#money{position:absolute;right:34px;bottom:34px;text-align:right;font-size:24px;font-weight:900;color:#f8e6bf;letter-spacing:.04em}
+#money small{display:block;color:#ffcd76;font-size:9px;letter-spacing:.19em}
+#wanted{position:absolute;right:224px;top:36px;font-size:24px;letter-spacing:4px;color:#ffd174;filter:drop-shadow(0 1px 5px #152026)}.star-lit{color:#ff594e;text-shadow:0 0 11px #ff432fcc}.star-dark{color:#4d6265;text-shadow:none}
+#weapon{position:absolute;right:36px;bottom:94px;text-align:right;font-weight:900;font-size:12px;letter-spacing:.12em}
+#weapon small{display:block;color:#ffd17f;font-size:10px;margin-top:4px}
+#feed{position:absolute;right:34px;top:222px;width:280px;text-align:right;font-size:11px;line-height:1.75;color:#ffdc9d}
+#radio{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);font-size:10px;letter-spacing:.2em;color:#ffe0a2;opacity:0}
+#dialogue{position:absolute;left:50%;bottom:87px;transform:translateX(-50%);width:min(590px,80vw);padding:14px 18px;background:linear-gradient(90deg,#071b20e8,#071b20b8);border-left:3px solid #f4b65f;text-align:center;font-size:13px}
+#speed-streaks{position:absolute;inset:-12%;pointer-events:none;opacity:0;background:repeating-conic-gradient(from 6deg at 50% 56%,transparent 0deg 7.1deg,#fff1d51f 7.2deg 7.35deg,transparent 7.45deg 12deg);mask-image:radial-gradient(ellipse at center,transparent 0 24%,#000 84%);transition:opacity .15s}
+#speed-streaks.active{opacity:1;animation:streak-drift .42s linear infinite}@keyframes streak-drift{to{transform:scale(1.035) rotate(.3deg)}}
+#reticle{position:absolute;left:50%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);border:1px solid #fff9;border-radius:50%;display:none}
+#reticle:after,#reticle:before{content:"";position:absolute;background:#fff9}#reticle:after{width:1px;height:22px;left:5px;top:-5px}#reticle:before{height:1px;width:22px;top:5px;left:-5px}#reticle.hit-confirm{border-color:#ff604f;box-shadow:0 0 12px #ff604f}#reticle.hit-confirm:after,#reticle.hit-confirm:before{background:#ff604f}
+.screen{pointer-events:auto;position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(90deg,#061719b5 0%,#06171949 49%,transparent 100%)}
+.screen[hidden]{display:none}.panel{width:min(460px,90vw);margin-left:7vw;padding:30px 34px 29px;background:linear-gradient(135deg,#10272ade,#10272ac4);border:1px solid #ffda9d75;box-shadow:0 20px 70px #05131675;backdrop-filter:blur(8px)}
+.eyebrow{font-size:10px;letter-spacing:.27em;color:#f4bd6d;font-weight:900}.logo{margin:15px 0 0;font-size:clamp(35px,5vw,63px);line-height:.86;letter-spacing:-.055em;font-weight:1000}.logo em{font-style:normal;background:linear-gradient(112deg,#fff6ce 0%,#ffd268 43%,#ff816d 100%);color:transparent;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;-webkit-text-stroke:.45px #ffeab0;text-shadow:none;filter:drop-shadow(0 0 14px #f1785b99)}.subtitle{font-size:11px;letter-spacing:.12em;color:#d2ddd5;margin:12px 0 26px}
+.menu-buttons{display:grid;gap:8px}.menu-buttons button,.menu-buttons .action{cursor:pointer;border:1px solid #dcbf8870;background:#ffffff0b;color:#f7ecd9;text-align:left;padding:11px 13px;font:700 12px system-ui,sans-serif;letter-spacing:.08em}.menu-buttons button:hover{background:#f2bb6040;border-color:#ffc969}.menu-buttons button.primary{background:#efac4b;color:#14251f;border-color:#ffca78}.menu-buttons button:disabled{cursor:not-allowed}
+.tiny{font-size:10px;line-height:1.7;color:#d2ddd5;margin-top:18px}.screen-title{position:absolute;left:28px;top:24px}
+#toast{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%);padding:9px 16px;border:1px solid #ffd08a99;background:#122a29d9;color:#ffe2ae;font-size:11px;letter-spacing:.13em;opacity:0;transition:opacity .25s}
+.map-card{position:absolute;right:34px;bottom:32px;width:224px;padding:10px;background:#102527e8;border:1px solid #f3cd9270;font-size:9px;letter-spacing:.12em;pointer-events:none}
+.map-card canvas{display:block;width:100%;height:auto;margin-top:7px}
+#title-atlas{position:absolute;right:35px;bottom:32px;width:218px;padding:10px;background:#102527dd;border:1px solid #f3cd9270;font-size:9px;letter-spacing:.12em;pointer-events:none}
+#title-atlas canvas{display:block;width:100%;height:auto;margin:8px 0}
+#pause-screen .map-card{left:3vw;right:3vw;top:4vh;bottom:4vh;width:auto;height:auto;transform:none;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#102527f2;font-size:12px;box-shadow:0 12px 60px #031014aa}
+#pause-screen .map-card canvas{width:92vw;height:69vh;max-height:none;object-fit:contain;margin:0}
+.settings-controls{display:grid;gap:12px;margin:17px 0;color:#e3d3b4;font-size:10px;letter-spacing:.12em}
+.settings-controls label{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.settings-controls input,.settings-controls select{width:53%;accent-color:#efac4b}
+#ui:has(#title-screen:not([hidden])) > :not(.screen){visibility:hidden}
+@media(max-width:700px){.topline{top:12px;left:12px}.district{display:none}#objective{left:12px;top:62px;width:260px}#minimap{right:12px;top:12px;width:132px;height:132px}.vitals{left:12px;bottom:14px}.map-card{display:none}#wanted{right:160px;top:18px}.panel{margin:0}.logo{font-size:40px}}
 </style>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
-<p id="status" role="status" aria-live="polite"></p>
+<canvas id="world" aria-label="Port Calida, a coastal city open world"></canvas>
+<div id="ui">
+  <div class="topline"><span class="seal">PC</span><span>PORT CALIDA HEAT <span class="district" id="district">MARINA ROW · SOLANA KEYS</span></span></div>
+  <div id="objective"><b>ACTIVE JOB · 01</b><span id="objective-text">A clean car. A dirty start.</span></div>
+  <canvas id="minimap" width="300" height="300"></canvas><div id="wanted"></div>
+  <div class="vitals"><div class="barrow">VITALS <span class="bar"><i id="health-fill"></i></span><span id="health-num">100</span></div><div class="barrow">ARMOUR <span class="bar"><i id="armour-fill"></i></span><span id="armour-num">35</span></div></div>
+  <div id="money"><small id="cash-label">CALIDA CASH · RESPECT 0</small>$<span>2,450</span></div>
+  <div id="weapon">BARE HANDS<small>UNARMED</small></div><div id="feed"></div>
+  <div id="radio">SOLANA FM · GOLDEN HOUR DRIVE</div><div id="dialogue" hidden></div><div id="reticle"></div><div id="speed-streaks"></div><div id="toast"></div>
+  <section id="title-screen" class="screen"><div class="panel"><div class="eyebrow">SOLANA KEYS · EST. 1987</div><h1 class="logo">PORT CALIDA<br><em>HEAT</em></h1><p class="subtitle">THE TIDE BRINGS EVERYTHING BACK.</p><div class="menu-buttons"><button class="primary" data-action="new">NEW GAME <span>→</span></button><button data-action="continue">CONTINUE</button><button data-action="controls">CONTROLS</button><button data-action="settings">SETTINGS · AUDIO ON</button></div><div class="tiny">RAFA MONTES · MARINA ROW, 19:42<br>AN ORIGINAL COASTAL CRIME STORY</div></div><div id="title-atlas">PORT CALIDA · STREET ATLAS<canvas id="title-map" width="400" height="250"></canvas>MARINA ROW · OLD MERCADO · THE CAUSEWAY</div></section>
+  <section id="pause-screen" class="screen" hidden><div class="panel"><div class="eyebrow">PORT CALIDA POLICE DEPARTMENT · CASE FILE OPEN</div><h2 class="logo" style="font-size:40px">ON PAUSE</h2><p class="subtitle">The city keeps breathing. You can take a moment.</p><div class="menu-buttons"><button class="primary" data-action="resume">BACK TO THE STREET</button><button data-action="save">SAVE AT SAFEHOUSE</button><button data-action="controls">CONTROLS</button><button data-action="settings">SETTINGS</button><button data-action="title">TITLE SCREEN</button></div></div><div class="map-card">PORT CALIDA · STREET ATLAS<canvas id="pause-map" width="400" height="250"></canvas><span>MARINA ROW · OLD MERCADO · THE CAUSEWAY</span><span>ESC · BACK TO THE STREET</span></div></section>
+  <section id="info-screen" class="screen" hidden><div class="panel"><div class="eyebrow" id="info-eyebrow">FIELD NOTES</div><h2 class="logo" style="font-size:38px" id="info-title">CONTROLS</h2><p class="subtitle" id="info-copy">WASD move · Shift sprint · Space vault<br>Mouse aim and orbit · Click fire · F enter/exit<br>1-4 equip · R reload · M street atlas · Esc pause</p><div id="settings-controls" class="settings-controls" hidden><label>VOLUME <input id="volume-range" type="range" min="0" max="1" step=".01" value=".32"></label><label>MOUSE SENSITIVITY <input id="sensitivity-range" type="range" min=".0008" max=".006" step=".0001" value=".0024"></label><label>GRAPHICS <select id="quality-select"><option value="high">HIGH · SOFT SHADOWS</option><option value="low">LOW · SMOOTH DRIVE</option></select></label></div><div class="menu-buttons"><button class="primary" data-action="back">GOT IT</button></div></div></section>
+  <section id="result-screen" class="screen" hidden><div class="panel"><div class="eyebrow">THE STREET REMEMBERS</div><h2 class="logo" style="font-size:42px" id="result-title">FLATLINED</h2><p class="subtitle" id="result-copy">St. Aurelia Clinic patched you up. The city still wants its money.</p><div class="menu-buttons"><button class="primary" data-action="respawn">BACK TO THE STREET</button></div></div></section>
+</div>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>
