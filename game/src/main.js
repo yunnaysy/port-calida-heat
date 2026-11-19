@@ -190,7 +190,7 @@ const menus = createMenus({
   },
 });
 
-let screen = 'title', last = performance.now(), clock = 0;
+let screen = 'title', last = performance.now(), clock = 0, menuWindowStep = -1;
 const game = { scene, city, state, player, vehicles, parked, titleCar, foregroundPalm, traffic, people, police, gang, courier, wanted, combat, particles, hud, menus, camera: follow, minimap, mission, waterMaterials };
 Object.defineProperty(game, 'screen', { get: () => screen, set: value => { screen = value; } });
 game.enterVehicle = enterVehicle;
@@ -584,12 +584,23 @@ function draw() {
     const cinematicMenu = screen === 'title' && (!shot || shot === 'title' || shot === 'settings');
     if (cinematicMenu) {
       const drift = Math.sin(clock * .09);
-      camera.position.lerp(new THREE.Vector3(-282 + drift * 1.2, 4.1 + Math.sin(clock * .06) * .12, 21 + drift * .55), 1 - Math.exp(-dt * 2.2));
-      camera.lookAt(-276 + drift * .35, 1.35, -94);
+      camera.position.lerp(new THREE.Vector3(-292 + drift * 1.2, 4.1 + Math.sin(clock * .06) * .12, 21 + drift * .55), 1 - Math.exp(-dt * 2.2));
+      camera.lookAt(-300 + drift * .35, 1.35, -94);
       titleCar.mesh.visible = true;
-      titleCar.mesh.position.set(-276 + Math.sin(clock * .12) * 1.2, 0, -18 - Math.sin(clock * .09) * 4);
+      titleCar.mesh.position.set(-276 + Math.sin(clock * .12) * 1.2, 0, -5 - Math.sin(clock * .09) * 3);
       titleCar.yaw = Math.sin(clock * .1) * .025;
       titleCar.mesh.rotation.y = titleCar.yaw;
+      titleCar.mesh.userData.wheels?.forEach(wheel => { wheel.rotation.x = clock * .16; });
+      if (scene.userData.lightingPreset === 'golden') {
+        const step = Math.floor(clock * 1.6);
+        if (step !== menuWindowStep) {
+          scene.userData.emissiveMaterials?.forEach((material, index) => {
+            const phase = (step * .075 + index * .173) % 1;
+            material.emissiveIntensity = phase > .72 ? .62 : .1;
+          });
+          menuWindowStep = step;
+        }
+      }
       foregroundPalm.visible = true;
       menuDust.forEach(({ mote, baseY, phase }) => {
         mote.visible = true;

@@ -100,10 +100,12 @@ export class ShaderPass {
 
         vec2 ray = uSun - vUv;
         vec3 shafts = vec3(0.0);
-        for (int i = 0; i < 10; i++) {
-          float t = float(i + 1) / 11.0;
-          vec3 sampleColor = texture2D(tDiffuse, vUv + ray * t).rgb;
-          shafts += max(calcLuma(sampleColor) - .78, 0.0) * vec3(1.0, .66, .38);
+        if (uShaftStrength > .001) {
+          for (int i = 0; i < 10; i++) {
+            float t = float(i + 1) / 11.0;
+            vec3 sampleColor = texture2D(tDiffuse, vUv + ray * t).rgb;
+            shafts += max(calcLuma(sampleColor) - .78, 0.0) * vec3(1.0, .66, .38);
+          }
         }
         float edgeFade = smoothstep(.03, .38, length(ray));
         color += shafts * uShaftStrength * edgeFade * .0018;

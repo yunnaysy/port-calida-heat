@@ -142,7 +142,7 @@ function addMarinaShopfronts(scene) {
       const valance = new THREE.Mesh(new THREE.BoxGeometry(.12, .48, .72), new THREE.MeshStandardMaterial({ color: stripe % 4 ? 0xf3d7ab : 0xe88767 }));
       valance.position.set(shop.x + side * 9.9, 5.35, shop.z + stripe); scene.add(valance);
     }
-    const neon = new THREE.PointLight(new THREE.Color(shop.color), 8, 23, 2);
+    const neon = new THREE.PointLight(new THREE.Color(shop.color), 36, 32, 2);
     neon.position.set(shop.x + side * 8.5, 8.1, shop.z); scene.add(neon);
   }
 }

@@ -13,8 +13,8 @@ const presets = {
   },
   night: {
     sky: ['#071326', '#101f39', '#263750', '#594258', '#111a2d'],
-    fog: 0x101a2d, fogDensity: .00078, ambient: .2, sun: .07,
-    hemiSky: 0x516b9a, hemiGround: 0x15243a, sunColor: 0x789ad0,
+    fog: 0x101a2d, fogDensity: .00078, ambient: .34, sun: .07,
+    hemiSky: 0x6179a8, hemiGround: 0x1a2c46, sunColor: 0x789ad0,
   },
 };
 
@@ -159,6 +159,7 @@ export function createSkyLighting(scene, renderer, initialPreset = 'golden') {
   }
   const tintNight = new THREE.Color(0x101e36);
   const emissiveMaterials = [];
+  scene.userData.emissiveMaterials = emissiveMaterials;
   scene.userData.registerNightMaterial = material => emissiveMaterials.push(material);
   const applyNightLighting = key => {
     const night = key === 'night';
