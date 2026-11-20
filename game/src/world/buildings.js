@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CITY, COLORS } from '../config.js';
 
-const facade = [0xd9c3a0, 0xf17e78, 0xf6b18f, 0xf4f0e8, 0x91adb1, 0xe7bd87];
+const facade = [0xd9c3a0, 0xf0a18b, 0xc3b89e, 0x91adb1, 0xe7bd87, 0xd88783];
 
 function windowTexture(random, tint) {
   const canvas = document.createElement('canvas');
@@ -68,7 +68,6 @@ export function addBuildings(scene, random) {
       emissive: 0xffb76b, emissiveIntensity: .12, roughness: .78, metalness: .04,
     });
     material.userData.dayEmissive = .1;
-    material.userData.goldenEmissive = .27;
     material.userData.nightEmissive = .95;
     scene.userData.registerNightMaterial?.(material);
     const body = new THREE.Mesh(new THREE.BoxGeometry(w, height, d), material);

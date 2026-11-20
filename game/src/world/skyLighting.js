@@ -2,29 +2,28 @@ import * as THREE from 'three';
 
 const presets = {
   day: {
-    sky: ['#064a86', '#1679b6', '#60afd0', '#e9d1a8', '#8ab0ba'],
-    fog: 0xb9cfd0, fogDensity: .00012, ambient: .9, sun: 3.5,
-    hemiSky: 0xaed8ee, hemiGround: 0x665c4d, sunColor: 0xfff0c2, exposure: 1.08,
+    sky: ['#28577a', '#79aab8', '#d2e0d9', '#f4d0a1', '#29495d'],
+    fog: 0xc3d3d0, fogDensity: .00048, ambient: .82, sun: 3.1,
+    hemiSky: 0xa9d5ee, hemiGround: 0x53624f, sunColor: 0xffe0a1,
   },
   golden: {
-    sky: ['#334f66', '#7e968c', '#477f9d', '#e3a873', '#ffc778', '#91aeb6', '#12375f'],
-    skyStops: [0, .4, .46, .49, .53, .58, 1],
-    fog: 0xadb9b3, fogDensity: .00024, ambient: .5, sun: 3.8,
-    hemiSky: 0x789bac, hemiGround: 0x555b54, sunColor: 0xffc27a, exposure: .98,
+    sky: ['#172f4a', '#594d69', '#c87579', '#f5ad7f', '#503a52'],
+    fog: 0xb77e79, fogDensity: .0008, ambient: .58, sun: 3.8,
+    hemiSky: 0x8e9bb8, hemiGround: 0x53434b, sunColor: 0xffbd72,
   },
   night: {
-    sky: ['#030a16', '#0a172b', '#101e36', '#17243b', '#101e36'],
-    fog: 0x101e36, fogDensity: .00062, ambient: 1.5, sun: .07,
-    hemiSky: 0x101e36, hemiGround: 0x29354a, sunColor: 0x9eb7df, exposure: 1.4,
+    sky: ['#071326', '#101f39', '#263750', '#594258', '#111a2d'],
+    fog: 0x101a2d, fogDensity: .00078, ambient: .34, sun: .07,
+    hemiSky: 0x6179a8, hemiGround: 0x1a2c46, sunColor: 0x789ad0,
   },
 };
 
-function makeSkyTexture(stops, night = false, stopPositions = null) {
+function makeSkyTexture(stops, night = false) {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 512;
   const context = canvas.getContext('2d');
   const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
-  stops.forEach((color, index) => gradient.addColorStop(stopPositions?.[index] ?? index / (stops.length - 1), color));
+  stops.forEach((color, index) => gradient.addColorStop(index / (stops.length - 1), color));
   context.fillStyle = gradient; context.fillRect(0, 0, canvas.width, canvas.height);
   context.globalAlpha = .1;
   for (let cloud = 0; cloud < 22; cloud++) {
@@ -53,27 +52,27 @@ function makeSkyTexture(stops, night = false, stopPositions = null) {
   return texture;
 }
 
-function makeEnvironmentTexture(stops, night = false, stopPositions = null) {
+function makeEnvironmentTexture(stops, night = false) {
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 256;
   const context = canvas.getContext('2d');
   const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
-  stops.forEach((color, index) => gradient.addColorStop(stopPositions?.[index] ?? index / (stops.length - 1), color));
+  stops.forEach((color, index) => gradient.addColorStop(index / (stops.length - 1), color));
   context.fillStyle = gradient; context.fillRect(0, 0, canvas.width, canvas.height);
-  context.globalAlpha = .1;
-  context.fillStyle = '#f6f1df'; context.fillRect(0, 138, canvas.width, 3);
   context.globalAlpha = .12;
+  context.fillStyle = '#fff2db'; context.fillRect(0, 138, canvas.width, 3);
+  context.globalAlpha = .18;
   for (let i = 0; i < 13; i++) {
-    context.fillStyle = i % 2 ? '#d9e3df' : '#b7c8ce';
+    context.fillStyle = i % 2 ? '#f5c393' : '#b7c8ce';
     context.beginPath();
     context.ellipse(37 + i * 43, 74 + (i % 3) * 9, 25 + (i % 4) * 7, 5 + i % 3, 0, 0, Math.PI * 2);
     context.fill();
   }
   context.globalAlpha = 1;
   if (!night) {
-    const sunset = context.createRadialGradient(94, 130, 2, 94, 130, 48);
-    sunset.addColorStop(0, '#fff0c8'); sunset.addColorStop(.3, '#ffc27a'); sunset.addColorStop(1, 'rgba(255,194,122,0)');
-    context.fillStyle = sunset; context.fillRect(38, 82, 112, 96);
+    const sunset = context.createRadialGradient(94, 144, 2, 94, 144, 54);
+    sunset.addColorStop(0, '#fff0c1'); sunset.addColorStop(.24, '#ffb86e'); sunset.addColorStop(1, 'rgba(255,157,107,0)');
+    context.fillStyle = sunset; context.fillRect(36, 90, 116, 108);
   }
   context.globalAlpha = .12;
   context.fillStyle = '#172d3a';
@@ -93,15 +92,13 @@ export function createSkyLighting(scene, renderer, initialPreset = 'golden') {
   const pmrem = new THREE.PMREMGenerator(renderer);
   pmrem.compileEquirectangularShader();
   const skyMaterial = new THREE.MeshBasicMaterial({
-    map: makeSkyTexture(presets.golden.sky, false, presets.golden.skyStops), side: THREE.BackSide, depthWrite: false, fog: false,
+    map: makeSkyTexture(presets.golden.sky), side: THREE.BackSide, depthWrite: false, fog: false,
   });
   const skyDome = new THREE.Mesh(new THREE.SphereGeometry(850, 32, 24), skyMaterial);
   scene.add(skyDome);
   const hemi = new THREE.HemisphereLight(0xa9d5ee, 0x53624f, 1);
   scene.add(hemi);
-  const nightFill = new THREE.AmbientLight(0xb2bfd4, 0);
-  scene.add(nightFill);
-  const sun = new THREE.DirectionalLight(0xffc27a, 2.45);
+  const sun = new THREE.DirectionalLight(0xffe0a1, 2.45);
   sun.position.set(-180, 260, 100); sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
   sun.shadow.camera.left = -240; sun.shadow.camera.right = 240;
@@ -132,17 +129,17 @@ export function createSkyLighting(scene, renderer, initialPreset = 'golden') {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = presets[initialPreset]?.exposure ?? presets.golden.exposure;
+  renderer.toneMappingExposure = 1.16;
 
   function setPreset(name = 'golden') {
     const key = presets[name] ? name : 'golden';
     const preset = presets[key];
     skyMaterial.map?.dispose();
-    skyMaterial.map = makeSkyTexture(preset.sky, key === 'night', preset.skyStops);
+    skyMaterial.map = makeSkyTexture(preset.sky, key === 'night');
     skyMaterial.needsUpdate = true;
     environmentSource?.dispose();
     environmentTarget?.dispose();
-    environmentSource = makeEnvironmentTexture(preset.sky, key === 'night', preset.skyStops);
+    environmentSource = makeEnvironmentTexture(preset.sky, key === 'night');
     environmentTarget = pmrem.fromEquirectangular(environmentSource);
     scene.environment = environmentTarget.texture;
     scene.userData.reflectionTexture = environmentSource;
@@ -151,14 +148,12 @@ export function createSkyLighting(scene, renderer, initialPreset = 'golden') {
     hemi.color.setHex(preset.hemiSky);
     hemi.groundColor.setHex(preset.hemiGround);
     hemi.intensity = preset.ambient;
-    nightFill.intensity = key === 'night' ? 2.6 : 0;
-    renderer.toneMappingExposure = preset.exposure;
     sun.color.setHex(preset.sunColor);
     sun.intensity = preset.sun;
-    sun.position.y = key === 'golden' ? 60 : key === 'night' ? 75 : 255;
+    sun.position.y = key === 'golden' ? 115 : key === 'night' ? 75 : 255;
     streetlights.forEach(light => { light.intensity = key === 'night' ? 760 : key === 'golden' ? .5 : 0; });
     glow.visible = key !== 'night';
-    glow.material.color.setHex(key === 'day' ? 0xfff0cc : key === 'golden' ? 0xffc27a : 0xffbd9c);
+    glow.material.color.setHex(key === 'day' ? 0xfff0cc : 0xffbd9c);
     scene.userData.lightingPreset = key;
     return key;
   }
@@ -169,9 +164,7 @@ export function createSkyLighting(scene, renderer, initialPreset = 'golden') {
   const applyNightLighting = key => {
     const night = key === 'night';
     emissiveMaterials.forEach(material => {
-      material.emissiveIntensity = night
-        ? material.userData.nightEmissive ?? .65
-        : key === 'golden' ? material.userData.goldenEmissive ?? .12 : material.userData.dayEmissive ?? .12;
+      material.emissiveIntensity = night ? material.userData.nightEmissive ?? .65 : material.userData.dayEmissive ?? .12;
     });
     scene.background = new THREE.Color(presetColor(key));
     if (night) scene.fog.color.set(tintNight);

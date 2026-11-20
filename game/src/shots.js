@@ -46,6 +46,9 @@ function addDockCover(scene, game, preset) {
   const quay = new THREE.Mesh(new THREE.BoxGeometry(100, .65, 172), concreteMaterial);
   quay.position.set(-365, -.03, 151); quay.receiveShadow = true; scene.add(quay);
   const water = createOceanMaterial(preset, scene.userData.reflectionTexture);
+  water.uniforms.uShallow.value.setHex(preset === 'night' ? 0x063655 : 0x075065);
+  water.uniforms.uDeep.value.setHex(0x041c31);
+  water.uniforms.uGlint.value.setHex(preset === 'day' ? 0x54aeb4 : 0xffa866);
   game.waterMaterials.push(water);
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(86, 190, 48, 92), water);
   sea.rotation.x = -Math.PI / 2; sea.position.set(-458, -.1, 151); scene.add(sea);
