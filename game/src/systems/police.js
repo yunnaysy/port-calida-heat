@@ -73,7 +73,25 @@ export function tickPolice(police, dt, target, wanted, traffic, notify) {
     }
     const rotorDisc = new THREE.Mesh(new THREE.CircleGeometry(5.2, 32), new THREE.MeshBasicMaterial({ color: 0xc3d2c2, transparent: true, opacity: .14, side: THREE.DoubleSide, depthWrite: false }));
     rotorDisc.rotation.x = -Math.PI / 2; rotorDisc.position.y = 6.22; rotorDisc.visible = false;
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(.25, 4.8, 29, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xffe6a4, transparent: true, opacity: .14, side: THREE.DoubleSide, depthWrite: false, toneMapped: false }));
+    const beamMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffe6a4, transparent: true, opacity: .12, side: THREE.DoubleSide,
+      depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending,
+    });
+    beamMaterial.onBeforeCompile = shader => {
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying float vBeamFacing;\nvarying float vBeamVertical;')
+        .replace('#include <project_vertex>', '#include <project_vertex>\nvBeamFacing = abs(dot(normalize(normalMatrix * normal), normalize(-mvPosition.xyz)));\nvBeamVertical = clamp((position.y + 14.5) / 29.0, 0.0, 1.0);');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vBeamFacing;\nvarying float vBeamVertical;')
+        .replace('#include <opaque_fragment>', `
+          diffuseColor.a *= smoothstep(0.0, 0.24, vBeamVertical)
+            * smoothstep(0.0, 0.24, 1.0 - vBeamVertical)
+            * smoothstep(0.02, 0.95, vBeamFacing);
+          #include <opaque_fragment>
+        `);
+    };
+    beamMaterial.customProgramCacheKey = () => 'searchlight-feather-v1';
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(.25, 4.8, 29, 16, 1, true), beamMaterial);
     beam.position.set(-.8, -12.5, 0);
     beam.visible = police.scene.userData.lightingPreset === 'night';
     const searchlight = new THREE.SpotLight(0xffe9ad, 150, 125, Math.PI / 7, .6, 1.2);

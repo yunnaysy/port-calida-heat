@@ -207,6 +207,12 @@ function addSignatureDriver(car) {
 export function stageShot(name, game, preset = 'golden') {
   name = ({ marina: 'onfoot', docks: 'mission' })[name] ?? name;
   const activePreset = game.city.sky.setPreset(preset);
+  if (name === 'onfoot' && activePreset === 'night') {
+    const playerPosition = game.player.mesh.position;
+    const nearestStreetlight = game.city.sky.streetlights.reduce((nearest, light) =>
+      light.position.distanceToSquared(playerPosition) < nearest.position.distanceToSquared(playerPosition) ? light : nearest);
+    nearestStreetlight.intensity *= .08;
+  }
   game.waterMaterials.forEach(material => {
     material.userData.setPreset(activePreset);
     material.uniforms.uEnvironment.value = game.scene.userData.reflectionTexture;

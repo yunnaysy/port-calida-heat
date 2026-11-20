@@ -177,5 +177,5 @@ export function createSkyLighting(scene, renderer, initialPreset = 'golden') {
     return key;
   };
   setPreset(initialPreset);
-  return { sun, hemi, glow, dome: skyDome, setPreset: setPresetAndMaterials, presets };
+  return { sun, hemi, glow, dome: skyDome, streetlights, setPreset: setPresetAndMaterials, presets };
 }
