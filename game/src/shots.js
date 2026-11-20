@@ -53,7 +53,7 @@ function addDockCover(scene, game, preset) {
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(86, 190, 48, 92), water);
   sea.rotation.x = -Math.PI / 2; sea.position.set(-458, -.1, 151); scene.add(sea);
   if (preset === 'night') {
-    const sodium = new THREE.PointLight(0xffb060, 520, 58, 2);
+    const sodium = new THREE.PointLight(0xffb060, 240, 58, 2);
     const cyan = new THREE.PointLight(0x38c7d9, 190, 42, 2);
     const magenta = new THREE.PointLight(0xf044a5, 190, 42, 2);
     for (const [x, y, z] of [[-402, 10, 112], [-370, 10, 151], [-338, 10, 190], [-370, 10, 105]]) {
