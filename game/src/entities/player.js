@@ -35,19 +35,43 @@ export function createPlayer(scene) {
   const grip = new THREE.Mesh(new THREE.BoxGeometry(.12, .25, .16), pistol.material);
   grip.position.set(0, -.16, -.08); weapon.add(grip);
   weapon.visible = false; facing.add(weapon); root.add(facing);
+  const radio = new THREE.Mesh(new THREE.BoxGeometry(.22, .32, .09), new THREE.MeshStandardMaterial({ color: 0x2f3438, metalness: .2, roughness: .5, emissive: 0x1a1010, emissiveIntensity: .2 }));
+  radio.position.set(-.56, 1.45, .12);
+  root.add(radio);
+  const flashlight = new THREE.SpotLight(0xfff2d4, 0, 34, Math.PI / 7, .45, 1.2);
+  flashlight.position.set(.2, 1.95, -.1);
+  flashlight.target.position.set(0, 1.4, -6);
+  facing.add(flashlight); facing.add(flashlight.target);
   root.position.set(0, 0, 7); scene.add(root);
-  return { mesh: root, limbs, pistol: weapon, facing, health: 100, armour: 35, yaw: 0, onFoot: true, walkTime: 0, jump: 0, invulnerable: 0 };
+  return {
+    mesh: root, limbs, pistol: weapon, facing, radio, flashlight,
+    health: 100, armour: 35, yaw: 0, onFoot: true, walkTime: 0, jump: 0, invulnerable: 0,
+    stamina: 1, exhausted: false, idleTime: 0,
+  };
 }
 
 /** Updates the player's walking limbs, pistol visibility, and jump pose. */
-export function animatePlayer(player, dt, moving, aiming) {
+export function animatePlayer(player, dt, moving, aiming, sprinting = false, preset = 'golden') {
   player.mesh.rotation.y = player.yaw;
-  player.walkTime += dt * (moving ? 11 : 2);
+  player.walkTime += dt * (moving ? (sprinting ? 15 : 11) : 2);
+  player.idleTime = (player.idleTime ?? 0) + dt;
+  const idleBob = !moving ? Math.sin(player.idleTime * 1.4) * .03 : 0;
   player.limbs.forEach((limb, index) => {
-    limb.rotation.x = moving ? Math.sin(player.walkTime + (index % 2) * Math.PI) * .48 : 0;
+    limb.rotation.x = moving ? Math.sin(player.walkTime + (index % 2) * Math.PI) * (sprinting ? .62 : .48) : 0;
+    if (!moving && index >= 2) limb.rotation.x = Math.sin(player.idleTime * 1.2 + index) * .05;
     if (aiming && index === 3) { limb.rotation.x = -.72; limb.rotation.z = -.25; }
   });
   player.pistol.visible = aiming;
-  player.mesh.position.y = player.jump > 0 ? Math.sin((.45 - player.jump) * Math.PI / .45) * 1.3 : 0;
+  const baseY = player.jump > 0 ? Math.sin((.45 - player.jump) * Math.PI / .45) * 1.3 : 0;
+  player.mesh.position.y = baseY + idleBob;
   player.jump = Math.max(0, player.jump - dt);
+  if (player.radio) {
+    player.radio.rotation.z = Math.sin(player.idleTime * 2.1) * (moving ? .08 : .03);
+    player.radio.position.y = 1.45 + Math.sin(player.idleTime * 1.7) * .015;
+  }
+  if (player.flashlight) {
+    const night = preset === 'night';
+    player.flashlight.intensity = night && (aiming || moving) ? 9 : 0;
+    player.flashlight.visible = night;
+  }
 }

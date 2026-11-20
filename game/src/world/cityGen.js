@@ -15,5 +15,6 @@ export function generateCity(scene, renderer, random, preset = 'golden') {
   const harbor = addHarborInfrastructure(scene);
   sky.setPreset(preset);
   props.userData.waterMaterial.userData.setPreset(preset);
-  return { sky, roadNetwork, buildings, props, harbor, ground };
+  const tickHarbor = harbor.userData?.tick ?? (() => {});
+  return { sky, roadNetwork, buildings, props, harbor, ground, tickHarbor };
 }

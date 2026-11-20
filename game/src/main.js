@@ -224,6 +224,8 @@ function continueGame() {
   garage.restore(saved.garage);
   state.weapons.splice(0, state.weapons.length, ...(saved.weapons ?? [true, true, false, false]));
   player.mesh.position.set(saved.x ?? 0, 0, saved.z ?? 8);
+  if (Number.isFinite(saved.wantedStars) && saved.wantedStars > 0) wanted.addCrime(saved.wantedStars * 20, 'saved heat');
+  if (saved.lightingPreset) { city.sky.setPreset(saved.lightingPreset); waterMaterials.forEach(material => { material.userData.setPreset(saved.lightingPreset); material.uniforms.uEnvironment.value = scene.userData.reflectionTexture; }); }
   beginGame(); refreshMission();
 }
 
@@ -253,9 +255,10 @@ function saveAtSafehouse() {
   }
   if (player.vehicle) {
     garage.store(player.vehicle);
+    garage.respray(null);
     player.vehicle = null; player.onFoot = true; player.mesh.visible = true;
     player.mesh.position.set(-54, 0, -60);
-    hud.notify(`LANTERN GARAGE · ${state.garage.kind.toUpperCase()} STORED`);
+    hud.notify(`LANTERN GARAGE · ${state.garage.kind.toUpperCase()} STORED · ${state.garage.paint?.toUpperCase() ?? 'RESPRAYED'}`);
   }
   if (autosave()) { hud.notify('SAFEHOUSE · GAME SAVED'); loadContinueState(); }
 }
@@ -352,6 +355,8 @@ function interact() {
     const weapon = !combat.owned[3] ? [3, 1100] : !combat.owned[2] ? [2, 720] : null;
     if (weapon) economy.buyWeapon(weapon[0], weapon[1], combat);
     else hud.notify('CALIDA ARMS · CARRY WHAT YOU CAN AFFORD');
+  } else if (player.mesh.position.x < -350 && player.mesh.position.z > 210) {
+    economy.oddJob('PORT-SIDE ODD JOB');
   } else hud.notify('NO RIDE IN REACH · FIND A KEY OR TRY FARES');
 }
 
@@ -425,16 +430,29 @@ function handleInput(dt) {
     if (movingBack) movement.sub(forward);
     if (steering) movement.addScaledVector(right, steering);
     const isMoving = movement.lengthSq() > .01;
+    let sprinting = false;
+    const wantsSprint = input.down('ShiftLeft') || input.down('ShiftRight');
     if (isMoving) {
       movement.normalize();
-      const speed = input.down('ShiftLeft') || input.down('ShiftRight') ? 12 : 7;
+      sprinting = wantsSprint && (player.stamina ?? 1) > 0.08 && !player.exhausted;
+      if (wantsSprint && sprinting) {
+        player.stamina = Math.max(0, (player.stamina ?? 1) - dt * .28);
+        if (player.stamina <= 0.01 && !player.exhausted) { player.exhausted = true; hud.notify('OUT OF BREATH · STAMINA RECOVERING'); }
+      } else {
+        player.stamina = Math.min(1, (player.stamina ?? 1) + dt * .22);
+        if (player.exhausted && player.stamina > .35) player.exhausted = false;
+      }
+      const speed = sprinting ? 12 : 7;
       const old = player.mesh.position.clone();
       player.mesh.position.addScaledVector(movement, speed * dt);
       if (blockCollision(player.mesh.position.x, player.mesh.position.z)) player.mesh.position.copy(old);
       player.yaw = Math.atan2(-movement.x, -movement.z);
+    } else {
+      player.stamina = Math.min(1, (player.stamina ?? 1) + dt * .3);
+      if (player.exhausted && player.stamina > .35) player.exhausted = false;
     }
     if (input.take('Space') && player.jump <= 0) player.jump = .45;
-    animatePlayer(player, dt, isMoving, combat.selected > 0);
+    animatePlayer(player, dt, isMoving, combat.selected > 0, sprinting, scene.userData.lightingPreset);
   }
   const activePosition = player.vehicle?.mesh.position ?? player.mesh.position;
   if (input.firing && shootingLock <= 0) {
@@ -467,8 +485,10 @@ function updateGame(dt) {
   if (player.invulnerable > 0) player.invulnerable -= dt;
   handleInput(dt);
   if (screen !== 'play') return;
+  const preset = scene.userData.lightingPreset;
+  state.lightingPreset = preset;
   if (player.vehicle) player.mesh.position.copy(player.vehicle.mesh.position);
-  for (const person of people) tickPedestrian(person, dt, player.mesh.position);
+  for (const person of people) tickPedestrian(person, dt, player.mesh.position, preset, wanted.stars);
   for (const packageItem of packages) {
     if (!packageItem.collected) {
       packageItem.mesh.rotation.y += dt * 1.6;
@@ -495,10 +515,14 @@ function updateGame(dt) {
     police.officers.forEach(officer => { officer.mesh.visible = false; });
     hud.clearFeed();
   }
+  wanted.setHidden?.(Boolean(player.vehicle) && !policeVisible && wanted.stars > 0);
   const policeVisible = policeClose && policeNearby;
   wanted.tick(dt, policeVisible, Boolean(player.vehicle));
+  state.wantedStars = wanted.stars;
   if (wanted.stars >= 4) audio.siren(police.cruisers[0]?.mesh.position, position);
   combat.tick(dt); particles.tick(dt);
+  particles.tickAmbient(dt, preset, position);
+  city.tickHarbor?.(dt, preset);
   shotEffectTimer -= dt;
   if (shot === 'mission' && shotEffectTimer <= 0) {
     const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
@@ -509,7 +533,9 @@ function updateGame(dt) {
   }
   mission.tick(dt, position, player.vehicle, wanted, missionTargetMet());
   if (mission.consumePassed()) { audio.missionComplete(); refreshMission(); autosave(); loadContinueState(); }
-  activities.tick(dt, position);
+  activities.tick(dt, position, player.vehicle);
+  state.missionStatus = mission.status;
+  state.activityStatus = activities.status;
   const target = player.vehicle?.mesh.position ?? player.mesh.position;
   if (player.health < 25 && lowHealthCooldown <= 0) { audio.lowHealth(); lowHealthCooldown = 2.8; }
   hud.setPrompt(contextualPrompt(target));
@@ -586,6 +612,8 @@ function draw() {
   if (screen === 'play') updateGame(dt);
   else {
     clock += dt; particles.tick(dt);
+    particles.tickAmbient(dt, scene.userData.lightingPreset, player.mesh.position);
+    city.tickHarbor?.(dt, scene.userData.lightingPreset);
     for (const car of traffic) {
       car.mesh.position.x += car.routeAxis === 'x' ? car.routeSign * car.cruise * dt : 0;
       car.mesh.position.z += car.routeAxis === 'z' ? car.routeSign * car.cruise * dt : 0;

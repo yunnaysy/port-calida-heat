@@ -37,15 +37,45 @@ export function addHarborInfrastructure(scene) {
   }
 
   const crane = new THREE.Group();
+  const craneParts = [];
   for (const [x, z] of [[-415, 96], [-370, 194]]) {
     box(crane, [1.1, 19, 1.1], [x, 9.5, z], 0x637b77);
-    box(crane, [25, 1, 1], [x + 12, 18.5, z], 0xd7b16f);
+    const boom = box(crane, [25, 1, 1], [x + 12, 18.5, z], 0xd7b16f);
     box(crane, [1, 5, 1], [x + 22, 16, z], 0x637b77);
     const cable = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, 6, 5), new THREE.MeshStandardMaterial({ color: 0x283a3c }));
     cable.position.set(x + 22, 12.5, z); crane.add(cable);
     box(crane, [12, 5, 20], [x + 22, 8.5, z], 0xa35745);
+    craneParts.push({ boom, cable, baseX: x, phase: (x + z) * .01 });
   }
   harbor.add(crane);
+
+  const lamps = [];
+  for (const x of [-620, -560, -500, -440, -380]) {
+    const pole = box(harbor, [.22, 6.2, .22], [x, 3.1, 284], 0x5f5a52);
+    const head = box(harbor, [.7, .28, .38], [x, 6.25, 284.15], 0x7a6b52);
+    head.material.emissive = new THREE.Color(0x000000);
+    const bulb = new THREE.PointLight(0xffc47a, 0, 24, 2);
+    bulb.position.set(x, 6.05, 284.2);
+    harbor.add(bulb);
+    lamps.push({ head, bulb, phase: x * .03 });
+  }
+  harbor.userData.tick = (dt, preset = 'golden') => {
+    const time = performance.now() * .001;
+    craneParts.forEach((part, index) => {
+      const sway = Math.sin(time * .45 + part.phase) * .018;
+      part.boom.rotation.z = sway;
+      part.cable.rotation.z = sway * 1.6;
+      part.cable.position.x = part.baseX + 22 + Math.sin(time * .7 + index) * .08;
+    });
+    const night = preset === 'night';
+    const golden = preset === 'golden';
+    lamps.forEach(lamp => {
+      lamp.bulb.intensity = night ? 32 : golden ? 6 : 0;
+      lamp.head.material.emissive.setHex(night ? 0xffb35a : golden ? 0x553318 : 0x000000);
+      lamp.head.material.emissiveIntensity = night ? .9 : golden ? .25 : 0;
+    });
+  };
+
   scene.add(harbor);
   return harbor;
 }

@@ -31,20 +31,58 @@ export function createPedestrian(scene, random, x, z) {
     root.add(arm); limbs.push(arm);
   }
   root.position.set(x, 0, z); scene.add(root);
-  return { mesh: root, limbs, walkTime: random() * 5, direction: random() * Math.PI * 2, pace: 1.1 + random() * .65, flee: 0, health: 45 };
+  const phone = random() < .45;
+  const phoneLight = phone ? new THREE.PointLight(0xffd7a0, 0, 6, 2) : null;
+  if (phoneLight) { phoneLight.position.set(.35, 1.65, -.25); root.add(phoneLight); }
+  return {
+    mesh: root, limbs, shirt, pants, phoneLight,
+    walkTime: random() * 5, direction: random() * Math.PI * 2, basePace: 1.1 + random() * .65, pace: 1.1 + random() * .65,
+    flee: 0, health: 45, linger: random() * 3, glance: 0,
+  };
 }
 
 /** Advances one pedestrian's walking path and flee-facing animation. */
-export function tickPedestrian(person, dt, player) {
-  const toward = player.clone().sub(person.mesh.position);
+export function tickPedestrian(person, dt, player, preset = 'golden', wantedStars = 0) {
+  const playerPos = player?.isVector3 ? player : player?.position ?? player;
+  const toward = playerPos.clone().sub(person.mesh.position);
+  const distance = toward.length();
+  person.linger = Math.max(0, (person.linger ?? 0) - dt);
+  person.glance = Math.max(0, (person.glance ?? 0) - dt);
   if (person.flee > 0) {
-    person.flee -= dt; person.direction = Math.atan2(-toward.x, -toward.z);
+    person.flee -= dt;
+    const fleeBoost = Math.max(0, wantedStars - 1) * .12;
+    person.direction = Math.atan2(-toward.x, -toward.z);
+    person.pace = (person.basePace ?? person.pace) * (2.4 + fleeBoost);
+  } else {
+    const calm = preset === 'night' ? .78 : preset === 'golden' ? .92 : 1;
+    person.pace = (person.basePace ?? person.pace) * calm;
+    if (wantedStars <= 1 && distance < 18 && distance > 3) {
+      if (person.linger <= 0 && Math.random() < .02) person.linger = .9 + Math.random() * 1.1;
+      if (person.glance <= 0 && Math.random() < .04) person.glance = .6;
+    } else if (person.linger <= 0 && Math.random() < dt * .06) {
+      person.direction += (Math.random() - .5) * .9;
+    }
   }
-  person.mesh.position.x += -Math.sin(person.direction) * person.pace * dt;
-  person.mesh.position.z += -Math.cos(person.direction) * person.pace * dt;
-  person.mesh.rotation.y = person.direction;
-  person.walkTime += dt * person.pace * 5;
+  if (person.flee <= 0 && person.linger > 0) {
+    person.mesh.rotation.y = Math.atan2(toward.x, toward.z);
+  } else {
+    if (person.flee <= 0 && person.linger <= 0) {
+      person.mesh.position.x += -Math.sin(person.direction) * person.pace * dt;
+      person.mesh.position.z += -Math.cos(person.direction) * person.pace * dt;
+    }
+    person.mesh.rotation.y = person.flee > 0 ? person.direction : (person.glance > 0 ? Math.atan2(toward.x, toward.z) : person.direction);
+  }
+  const moving = person.flee > 0 || person.linger <= 0;
+  if (moving) person.walkTime += dt * person.pace * (person.flee > 0 ? 7 : 5);
   person.limbs?.forEach((limb, index) => {
-    limb.rotation.x = Math.sin(person.walkTime + (index % 2) * Math.PI) * .38;
+    limb.rotation.x = moving ? Math.sin(person.walkTime + (index % 2) * Math.PI) * (person.flee > 0 ? .55 : .38) : 0;
   });
+  if (person.phoneLight) person.phoneLight.intensity = preset === 'night' && person.flee <= 0 ? .8 : 0;
+  if (person.shirt) {
+    const night = preset === 'night';
+    person.shirt.emissive?.setHex?.(0x000000);
+    person.shirt.emissiveIntensity = 0;
+    person.pants && (person.pants.emissiveIntensity = 0);
+    person.mesh.userData.nightTone = night;
+  }
 }

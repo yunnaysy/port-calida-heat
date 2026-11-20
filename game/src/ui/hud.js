@@ -25,15 +25,18 @@ export function createHud() {
       const current = mission.current;
       objectiveLabel.textContent = mission.completed ? 'SOLANA KEYS · FREE ROAM' : `JOB ${String(mission.index + 1).padStart(2, '0')} · ${current.title.toUpperCase()}`;
       objective.textContent = mission.completed ? 'The tide is yours to read now.' :
-        `${current.detail}${state.encounterText ? ` · ${state.encounterText}` : ''}${state.shotTimer ? ` · ${state.shotTimer}` : ''}${mission.timeLeft > 0 ? ` · ${Math.ceil(mission.timeLeft)} SEC` : ''}`;
+        `${current.detail}${state.encounterText ? ` · ${state.encounterText}` : ''}${state.shotTimer ? ` · ${state.shotTimer}` : ''}${mission.timeLeft > 0 ? ` · ${Math.ceil(mission.timeLeft)} SEC` : ''}${mission.status && !mission.completed ? ` · ${mission.status}` : ''}${state.activityStatus ? ` · ${state.activityStatus}` : ''}`;
       wanted.innerHTML = `${'<span class="star-lit">★</span> '.repeat(wantedSystem.stars)}${'<span class="star-dark">★</span> '.repeat(5 - wantedSystem.stars)}`;
-      wanted.style.opacity = wantedSystem.stars ? '1' : '0';
+      wanted.title = wantedSystem.status ? wantedSystem.status.toUpperCase() : '';
+      wanted.style.opacity = wantedSystem.stars ? '1' : (wantedSystem.status === 'evaded' ? '.5' : '0');
       wanted.style.color = wantedSystem.stars >= 4 ? '#ff795e' : '#ffd174';
       wanted.style.setProperty('--wanted-lit', wantedSystem.stars >= 4 ? '#ff795e' : '#ffd174');
       byId('health-fill').style.width = `${Math.max(0, state.player.health)}%`;
       byId('armour-fill').style.width = `${Math.max(0, state.player.armour)}%`;
       byId('health-num').textContent = Math.ceil(state.player.health);
       byId('armour-num').textContent = Math.ceil(state.player.armour);
+      const staminaFill = byId('stamina-fill');
+      if (staminaFill) staminaFill.style.width = `${Math.max(0, Math.min(100, (state.player.stamina ?? 1) * 100))}%`;
       byId('cash-label').textContent = `CASH · REP ${state.respect}`;
       document.querySelector('#money span').textContent = state.cash.toLocaleString();
       const weapon = WEAPONS[combat.selected];
