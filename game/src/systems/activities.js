@@ -1,3 +1,5 @@
+// Runs optional taxi-fare and Causeway Sprint side activities, including timers and rewards.
+/** Creates the side-activity state machine driven by world markers. */
 export function createActivities(state, economy, notify) {
   let activity = '', raceStage = 0, taxiTimer = 0;
   const checkpoints = [[276, -184], [368, -184], [368, -92], [276, 0]];

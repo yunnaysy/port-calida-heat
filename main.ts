@@ -1,7 +1,5 @@
-// PORT CALIDA HEAT: a complete original coastal-city crime game, built from offline static
-// Three.js modules and procedural art, with story jobs, cars, traffic, combat, PCPD pursuit,
-// activities, progression, local saves, a minimap and synthesized sound. This entry hand-in
-// copies game/ and the four real browser screenshots, then writes the judge-facing dossier.
+// PORT CALIDA HEAT entry hand-in: copies game/ and screenshots/ into the output directory,
+// then writes the judge-facing dossier.json with buildDossier.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:

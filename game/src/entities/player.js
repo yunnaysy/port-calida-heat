@@ -1,5 +1,7 @@
+// Defines the player's on-foot character mesh and walking, aiming, and jump animation.
 import * as THREE from 'three';
 
+/** Builds the player's visible character and returns it with its shared animation state. */
 export function createPlayer(scene) {
   const root = new THREE.Group();
   const shirt = new THREE.MeshStandardMaterial({ color: 0x2d5651, roughness: .85 });
@@ -37,6 +39,7 @@ export function createPlayer(scene) {
   return { mesh: root, limbs, pistol: weapon, facing, health: 100, armour: 35, yaw: 0, onFoot: true, walkTime: 0, jump: 0, invulnerable: 0 };
 }
 
+/** Updates the player's walking limbs, pistol visibility, and jump pose. */
 export function animatePlayer(player, dt, moving, aiming) {
   player.mesh.rotation.y = player.yaw;
   player.walkTime += dt * (moving ? 11 : 2);

@@ -1,5 +1,7 @@
+// Creates and advances brief Three.js combat and smoke effects for the game world.
 import * as THREE from 'three';
 
+/** Builds reusable particle and tracer effects and the tick loop that removes them. */
 export function createParticles(scene, random = Math.random) {
   const effects = [];
   const geometry = new THREE.SphereGeometry(.12, 6, 5);

@@ -1,7 +1,10 @@
+// Builds and animates the city's randomly dressed pedestrian crowd; these actors support
+// the foot-level traffic, walking, and flee reactions around player activities.
 import * as THREE from 'three';
 
 const colors = [0xe27e5e, 0x4c7f7b, 0xe2c472, 0x6984a0, 0xd1a28d, 0x704f52];
 
+/** Creates a randomized pedestrian mesh and state at the given world position. */
 export function createPedestrian(scene, random, x, z) {
   const root = new THREE.Group();
   const shirt = new THREE.MeshStandardMaterial({ color: colors[Math.floor(random() * colors.length)], roughness: .9 });
@@ -31,6 +34,7 @@ export function createPedestrian(scene, random, x, z) {
   return { mesh: root, limbs, walkTime: random() * 5, direction: random() * Math.PI * 2, pace: 1.1 + random() * .65, flee: 0, health: 45 };
 }
 
+/** Advances one pedestrian's walking path and flee-facing animation. */
 export function tickPedestrian(person, dt, player) {
   const toward = player.clone().sub(person.mesh.position);
   if (person.flee > 0) {

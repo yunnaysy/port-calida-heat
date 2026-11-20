@@ -1,5 +1,7 @@
+// Handles the browser-local persistence of player progress and world position.
 import { SAVE_KEY } from '../config.js';
 
+/** Reads and validates the saved game value exposed by localStorage. */
 export function readSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -10,6 +12,7 @@ export function readSave() {
   }
 }
 
+/** Writes the current progress and position to browser-local storage. */
 export function writeSave(state, position) {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({

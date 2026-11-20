@@ -1,3 +1,5 @@
+// Tracks PCPD wanted stars and the peaceful cool-down period after crimes.
+/** Creates the wanted-level state machine used by crime and pursuit systems. */
 export function createWanted() {
   let score = 0;
   let coolOff = 0;

@@ -1,3 +1,5 @@
+// Supplies deterministic pseudo-random helpers for repeatable game-world variation.
+/** Creates a seeded PRNG function that yields values in the [0, 1) range. */
 export function createRng(seed = 1) {
   let state = seed >>> 0;
   return () => {
@@ -9,6 +11,7 @@ export function createRng(seed = 1) {
   };
 }
 
+/** Picks one item using the supplied random-number function. */
 export function pick(random, items) {
   return items[Math.floor(random() * items.length)];
 }

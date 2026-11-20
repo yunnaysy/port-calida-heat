@@ -1,3 +1,4 @@
+// Builds the harbor quay, pilings, and cranes that form the industrial waterfront.
 import * as THREE from 'three';
 
 function box(group, size, position, color, material = null) {
@@ -6,6 +7,7 @@ function box(group, size, position, color, material = null) {
   return mesh;
 }
 
+/** Adds the harbor's static infrastructure to the scene and returns its root group. */
 export function addHarborInfrastructure(scene) {
   const harbor = new THREE.Group();
   const deck = box(harbor, [270, .55, 20], [ -500, .03, 276], 0x353c3b);

@@ -1,5 +1,7 @@
+// Connects the garage location with vehicle storage and restore behavior across play sessions.
 import { createVehicle } from '../entities/vehicle.js';
 
+/** Creates garage actions that move one stored vehicle in and out of the world. */
 export function createGarage(scene, vehicles, parked, state) {
   let storedVehicle = null;
 

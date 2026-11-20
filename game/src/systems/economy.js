@@ -1,3 +1,5 @@
+// Owns cash-and-respect purchases and fare payouts for progression throughout Port Calida.
+/** Creates the economy helpers that modify shared player progression state. */
 export function createEconomy(state, notify) {
   return {
     get level() { return 1 + Math.floor(state.respect / 3); },

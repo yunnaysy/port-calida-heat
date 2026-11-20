@@ -1,5 +1,7 @@
+// Drives the story mission sequence, targets, timers, rewards, and completion dialogue.
 import { MISSIONS } from '../config.js';
 
+/** Creates the mission state machine that advances Lu Varga's story jobs. */
 export function createMissionSystem(state, notify, dialogue, crime, save) {
   let timer = 0;
   let elapsed = 0;
