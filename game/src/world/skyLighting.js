@@ -14,7 +14,7 @@ const presets = {
   night: {
     sky: ['#030a16', '#0a172b', '#101e36', '#17243b', '#101e36'],
     fog: 0x101e36, fogDensity: .00062, ambient: 1.5, sun: .07,
-    hemiSky: 0x101e36, hemiGround: 0x29354a, sunColor: 0x9eb7df, exposure: 1.28,
+    hemiSky: 0x101e36, hemiGround: 0x29354a, sunColor: 0x9eb7df, exposure: 1.4,
   },
 };
 
@@ -98,7 +98,7 @@ export function createSkyLighting(scene, renderer, initialPreset = 'golden') {
   scene.add(skyDome);
   const hemi = new THREE.HemisphereLight(0xa9d5ee, 0x53624f, 1);
   scene.add(hemi);
-  const nightFill = new THREE.AmbientLight(0x9cadc9, 0);
+  const nightFill = new THREE.AmbientLight(0xb2bfd4, 0);
   scene.add(nightFill);
   const sun = new THREE.DirectionalLight(0xffe0a1, 2.45);
   sun.position.set(-180, 260, 100); sun.castShadow = true;
@@ -150,7 +150,7 @@ export function createSkyLighting(scene, renderer, initialPreset = 'golden') {
     hemi.color.setHex(preset.hemiSky);
     hemi.groundColor.setHex(preset.hemiGround);
     hemi.intensity = preset.ambient;
-    nightFill.intensity = key === 'night' ? 1.8 : 0;
+    nightFill.intensity = key === 'night' ? 2.6 : 0;
     renderer.toneMappingExposure = preset.exposure;
     sun.color.setHex(preset.sunColor);
     sun.intensity = preset.sun;
