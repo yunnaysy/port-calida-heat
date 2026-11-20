@@ -222,9 +222,8 @@ export function stageShot(name, game, preset = 'golden') {
     game.enterVehicle(car, true);
     car.mesh.position.set(-276, 0, 7); car.yaw = 0; car.mesh.rotation.y = 0; car.speed = 13;
     car.mesh.traverse(object => {
-      if (object.isMesh && object.material?.userData.carPaint) object.material.color.setHex(0xb83f55);
+      if (object.isMesh && object.material?.userData.carPaint) object.material.color.setHex(0xc52c35);
     });
-    car.mesh.children[2].visible = false;
     addSignatureDriver(car);
     addMarinaShopfronts(game.scene);
     game.titleCar.mesh.visible = false;

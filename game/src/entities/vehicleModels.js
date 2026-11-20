@@ -85,6 +85,22 @@ function loftBody(width, length) {
     const rightA = leftA + ringSize - 1, rightB = rightA + ringSize;
     indices.push(leftA, leftA + 1, leftB, rightA, rightA - 1, rightB);
   }
+  for (let station = 0; station < stations.length - 1; station++) {
+    const leftBottom = station * ringSize;
+    const rightBottom = leftBottom + ringSize - 1;
+    const nextLeftBottom = leftBottom + ringSize;
+    const nextRightBottom = rightBottom + ringSize;
+    indices.push(leftBottom, rightBottom, nextLeftBottom, rightBottom, nextRightBottom, nextLeftBottom);
+  }
+  const startCenter = vertices.length / 3;
+  vertices.push(0, .98, stations[0][0] * length);
+  const endCenter = vertices.length / 3;
+  vertices.push(0, .98, stations.at(-1)[0] * length);
+  for (let point = 0; point < ringSize - 1; point++) {
+    indices.push(startCenter, point, point + 1);
+    const end = (stations.length - 1) * ringSize;
+    indices.push(endCenter, end + point + 1, end + point);
+  }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
   geometry.setIndex(indices);

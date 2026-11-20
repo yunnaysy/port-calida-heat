@@ -68,6 +68,7 @@ export function addBuildings(scene, random) {
       emissive: 0xffb76b, emissiveIntensity: .12, roughness: .78, metalness: .04,
     });
     material.userData.dayEmissive = .1;
+    material.userData.goldenEmissive = .27;
     material.userData.nightEmissive = .95;
     scene.userData.registerNightMaterial?.(material);
     const body = new THREE.Mesh(new THREE.BoxGeometry(w, height, d), material);
