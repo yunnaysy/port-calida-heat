@@ -18,14 +18,14 @@ function addDockCover(scene, game, preset) {
   const concreteCanvas = document.createElement('canvas');
   concreteCanvas.width = concreteCanvas.height = 512;
   const concreteContext = concreteCanvas.getContext('2d');
-  concreteContext.fillStyle = '#555653'; concreteContext.fillRect(0, 0, 512, 512);
+  concreteContext.fillStyle = '#777c78'; concreteContext.fillRect(0, 0, 512, 512);
   let seed = 41;
   for (let i = 0; i < 10500; i++) {
     seed = seed * 16807 % 2147483647;
     const x = seed / 2147483647 * 512;
     seed = seed * 16807 % 2147483647;
     const y = seed / 2147483647 * 512;
-    const shade = 62 + seed % 50;
+    const shade = 88 + seed % 62;
     concreteContext.fillStyle = `rgba(${shade},${shade},${shade - 2},.16)`;
     concreteContext.fillRect(x, y, 1 + seed % 3, 1 + seed % 2);
   }
@@ -42,7 +42,7 @@ function addDockCover(scene, game, preset) {
   concrete.colorSpace = THREE.SRGBColorSpace;
   concrete.wrapS = concrete.wrapT = THREE.RepeatWrapping;
   concrete.repeat.set(2, 3);
-  const concreteMaterial = new THREE.MeshStandardMaterial({ map: concrete, color: 0xd1c6af, roughness: .84, metalness: .025 });
+  const concreteMaterial = new THREE.MeshStandardMaterial({ map: concrete, color: 0xe7dfca, roughness: .84, metalness: .025 });
   const quay = new THREE.Mesh(new THREE.BoxGeometry(100, .65, 172), concreteMaterial);
   quay.position.set(-365, -.03, 151); quay.receiveShadow = true; scene.add(quay);
   const water = createOceanMaterial(preset, scene.userData.reflectionTexture);
@@ -65,9 +65,9 @@ function addDockCover(scene, game, preset) {
   ribCanvas.width = 256; ribCanvas.height = 512;
   const ribContext = ribCanvas.getContext('2d');
   const ribGradient = ribContext.createLinearGradient(0, 0, ribCanvas.width, 0);
-  ribGradient.addColorStop(0, '#17282d'); ribGradient.addColorStop(.14, '#98a094');
-  ribGradient.addColorStop(.36, '#2b3b40'); ribGradient.addColorStop(.65, '#a2a292');
-  ribGradient.addColorStop(1, '#1b2b30');
+  ribGradient.addColorStop(0, '#777b76'); ribGradient.addColorStop(.14, '#d4cdb8');
+  ribGradient.addColorStop(.36, '#8e938d'); ribGradient.addColorStop(.65, '#ddd4bd');
+  ribGradient.addColorStop(1, '#747873');
   ribContext.fillStyle = ribGradient; ribContext.fillRect(0, 0, ribCanvas.width, ribCanvas.height);
   for (let x = 0; x < 256; x += 12) {
     ribContext.fillStyle = x % 24 ? 'rgba(7,13,16,.68)' : 'rgba(236,211,162,.5)';
@@ -84,9 +84,9 @@ function addDockCover(scene, game, preset) {
   ribTexture.colorSpace = THREE.SRGBColorSpace;
   const containerColors = [0x8b423d, 0x1d626b, 0xa27839, 0x445667, 0x7d5140, 0x52654d];
   const containers = [
-    [-388, 4, 150, 15, 8, 24, 0], [-388, 12, 150, 15, 8, 24, 1],
-    [-397, 4, 180, 15, 8, 23, 2], [-397, 12, 180, 15, 8, 23, 3],
-    [-392, 4, 120, 16, 8, 22, 4], [-392, 4, 204, 16, 8, 22, 5],
+    [-395, 4, 111, 18, 8, 24, 0], [-395, 12, 111, 18, 8, 24, 1],
+    [-405, 4, 124, 18, 8, 23, 2], [-405, 12, 124, 18, 8, 23, 3],
+    [-400, 4, 100, 18, 8, 22, 4], [-400, 4, 136, 18, 8, 22, 5],
   ];
   containers.forEach(([x, y, z, width, height, length, colorIndex]) => {
     const material = new THREE.MeshStandardMaterial({ map: ribTexture, color: containerColors[colorIndex], roughness: .58, metalness: .24 });
@@ -102,25 +102,25 @@ function addDockCover(scene, game, preset) {
   const craneGold = new THREE.MeshStandardMaterial({ color: 0xc59650, metalness: .28, roughness: .54 });
   for (const x of [-408, -372]) {
     const gantry = new THREE.Group();
-    for (const z of [116, 187]) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(2.2, 20, 2.4), craneMetal);
-      leg.position.set(x, 10, z); gantry.add(leg);
-      const brace = new THREE.Mesh(new THREE.BoxGeometry(1, 15, 1), craneGold);
-      brace.position.set(x, 8, z < 150 ? 124 : 179); brace.rotation.x = z < 150 ? -.42 : .42; gantry.add(brace);
+    for (const z of [105, 198]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(2.2, 14, 2.4), craneMetal);
+      leg.position.set(x, 7, z); gantry.add(leg);
+      const brace = new THREE.Mesh(new THREE.BoxGeometry(1, 11, 1), craneGold);
+      brace.position.set(x, 6, z < 150 ? 115 : 188); brace.rotation.x = z < 150 ? -.42 : .42; gantry.add(brace);
       const foot = new THREE.Mesh(new THREE.BoxGeometry(8, .75, 4), craneMetal);
       foot.position.set(x, .38, z); gantry.add(foot);
     }
-    const boom = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 78), craneGold);
-    boom.position.set(x, 20.4, 151); gantry.add(boom);
-    const rearBoom = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 24), craneMetal);
-    rearBoom.position.set(x + 2.4, 19.5, 151); gantry.add(rearBoom);
+    const boom = new THREE.Mesh(new THREE.BoxGeometry(3, 1.5, 78), craneGold);
+    boom.position.set(x, 14.4, 151); gantry.add(boom);
+    const rearBoom = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 24), craneMetal);
+    rearBoom.position.set(x + 2.4, 13.7, 151); gantry.add(rearBoom);
     const cable = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 9, 6), craneMetal);
-    cable.position.set(x, 14.6, 151); gantry.add(cable);
+    cable.position.set(x, 9.5, 151); gantry.add(cable);
     const trolley = new THREE.Mesh(new THREE.BoxGeometry(4, 2.4, 4), craneMetal);
     trolley.position.set(x, 10, 151); gantry.add(trolley);
     for (let i = -3; i <= 3; i++) {
       const brace = new THREE.Mesh(new THREE.BoxGeometry(1, 4.4, 1), craneGold);
-      brace.position.set(x, 18, 151 + i * 9); brace.rotation.x = i % 2 ? .55 : -.55; gantry.add(brace);
+      brace.position.set(x, 12.5, 151 + i * 9); brace.rotation.x = i % 2 ? .55 : -.55; gantry.add(brace);
     }
     scene.add(gantry);
   }
@@ -288,8 +288,13 @@ export function stageShot(name, game, preset = 'golden') {
   } else if (name === 'mission') {
     position(-365, 158, 0); player.mesh.rotation.y = player.yaw;
     game.city.buildings.visible = false;
+    game.city.props.visible = false;
+    game.city.ground.visible = false;
+    game.city.roadNetwork.visible = false;
+    game.markers.forEach(marker => { marker.visible = false; });
     game.combat.unlock(2); game.combat.equip(2); player.pistol.visible = true;
-    game.camera.state.distance = 12; game.camera.state.yaw = .65;
+    game.camera.camera.fov = 64;
+    game.camera.camera.updateProjectionMatrix();
     addDockCover(game.scene, game, activePreset);
     game.hud.say('LU VARGA  ·  “Pier Nine. Dex’s boys have the ledger. Leave the dockhands out of it.”', 40);
     game.hud.clearFeed();
@@ -353,8 +358,8 @@ export function stageShot(name, game, preset = 'golden') {
     game.camera.camera?.position.set(-282, 3.9, 25);
     game.camera.camera?.lookAt(-276, 1.15, -100);
   } else if (name === 'mission') {
-    game.camera.camera?.position.set(-330, 7.5, 194);
-    game.camera.camera?.lookAt(-385, 7, 86);
+    game.camera.camera?.position.set(-345, 8, 157);
+    game.camera.camera?.lookAt(-385, 1.3, 157);
   } else {
     game.camera.update(target.clone().add(new THREE.Vector3(0, player.vehicle ? 2 : 2.2, 0)), player.vehicle?.yaw ?? player.yaw, 1, Boolean(player.vehicle), true);
   }

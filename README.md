@@ -11,6 +11,7 @@ A sun-washed crime story set in Port Calida, a fictional coastal city on the Sol
 - Six connected story jobs, taxi fares, a checkpoint race, hidden packages, weapons, respect and cash.
 - A rotating minimap, mission marker, wanted stars, radio, synthesized sound, menus and local saves.
 - Procedural facade and asphalt detail, clear-coat vehicles, reflective animated water, warm street lighting and a cinematic live title scene.
+- The port scene features weathered quay surfaces, colored ribbed cargo containers, gantry cranes and a waterline view.
 - Selective emissive bloom, a restrained split-tone grade, vignette and golden-hour shafts; Low quality disables the post-processing pipeline.
 
 ## Controls
