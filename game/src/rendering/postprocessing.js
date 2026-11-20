@@ -92,11 +92,7 @@ export class ShaderPass {
         vec3 bloom = texture2D(tBloom, vUv).rgb;
         color += bloom * uBloomStrength;
 
-        float shade = 1.0 - smoothstep(.16, .78, calcLuma(color));
-        color += vec3(-.006, -.003, .008) * shade;
-        float light = smoothstep(.25, .92, calcLuma(color));
-        color += vec3(.014, .006, -.012) * light;
-        color = (color - .5) * 1.065 + .5;
+        color = (color - .5) * 1.035 + .5;
 
         vec2 ray = uSun - vUv;
         vec3 shafts = vec3(0.0);
@@ -111,7 +107,7 @@ export class ShaderPass {
         color += shafts * uShaftStrength * edgeFade * .0018;
 
         float vignette = 1.0 - smoothstep(.28, .92, length((vUv - .5) * vec2(1.0, .92)));
-        color *= mix(.76, 1.0, vignette);
+        color *= mix(.88, 1.0, vignette);
         if (uCinematicFocus > .5) {
           vec2 offset = (vUv - .5) * .0012;
           vec3 soft = texture2D(tDiffuse, vUv + offset).rgb * .25;

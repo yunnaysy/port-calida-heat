@@ -46,12 +46,30 @@ function addDockCover(scene, game, preset) {
   const quay = new THREE.Mesh(new THREE.BoxGeometry(100, .65, 172), concreteMaterial);
   quay.position.set(-365, -.03, 151); quay.receiveShadow = true; scene.add(quay);
   const water = createOceanMaterial(preset, scene.userData.reflectionTexture);
-  water.uniforms.uShallow.value.setHex(preset === 'night' ? 0x063655 : 0x075065);
-  water.uniforms.uDeep.value.setHex(0x041c31);
-  water.uniforms.uGlint.value.setHex(preset === 'day' ? 0x54aeb4 : 0xffa866);
   game.waterMaterials.push(water);
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(86, 190, 48, 92), water);
   sea.rotation.x = -Math.PI / 2; sea.position.set(-458, -.1, 151); scene.add(sea);
+  if (preset === 'night') {
+    const sodium = new THREE.PointLight(0xffb060, 520, 58, 2);
+    const cyan = new THREE.PointLight(0x38c7d9, 190, 42, 2);
+    const magenta = new THREE.PointLight(0xf044a5, 190, 42, 2);
+    for (const [x, y, z] of [[-402, 10, 112], [-370, 10, 151], [-338, 10, 190], [-370, 10, 105]]) {
+      const lamp = sodium.clone();
+      lamp.position.set(x, y, z); scene.add(lamp);
+    }
+    cyan.position.set(-392, 13, 135); scene.add(cyan);
+    magenta.position.set(-337, 10, 126); scene.add(magenta);
+    for (const [color, position] of [
+      [0xffb060, [-402, 14, 112]], [0xffb060, [-370, 14, 151]], [0xffb060, [-338, 14, 190]],
+      [0x38c7d9, [-392, 13, 135]], [0xf044a5, [-337, 10, 126]],
+    ]) {
+      const fixture = new THREE.Mesh(
+        new THREE.BoxGeometry(4.5, .28, .32),
+        new THREE.MeshBasicMaterial({ color, toneMapped: false }),
+      );
+      fixture.position.set(...position); scene.add(fixture);
+    }
+  }
   const bollardMaterial = new THREE.MeshStandardMaterial({ color: 0x3c4747, metalness: .58, roughness: .48 });
   const bollards = new THREE.InstancedMesh(new THREE.CylinderGeometry(.42, .5, 1.5, 10), bollardMaterial, 9);
   const matrix = new THREE.Matrix4();
@@ -268,6 +286,8 @@ export function stageShot(name, game, preset = 'golden') {
       vehicle.routeAxis = 'z'; vehicle.routeSign = -1; vehicle.yaw = 0; vehicle.ai = false; vehicle.speed = 0;
     });
     const inletWater = createOceanMaterial(activePreset);
+    inletWater.userData.setPreset(activePreset);
+    inletWater.uniforms.uEnvironment.value = game.scene.userData.reflectionTexture;
     game.waterMaterials.push(inletWater);
     const inlet = new THREE.Mesh(new THREE.PlaneGeometry(125, 150, 45, 54), inletWater);
     inlet.rotation.x = -Math.PI / 2; inlet.position.set(-466, -.1, -110); game.scene.add(inlet);

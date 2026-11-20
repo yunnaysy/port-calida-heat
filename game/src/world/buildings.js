@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CITY, COLORS } from '../config.js';
 
-const facade = [0xd9c3a0, 0xf0a18b, 0xc3b89e, 0x91adb1, 0xe7bd87, 0xd88783];
+const facade = [0xd9c3a0, 0xf17e78, 0xf6b18f, 0xf4f0e8, 0x91adb1, 0xe7bd87];
 
 function windowTexture(random, tint) {
   const canvas = document.createElement('canvas');

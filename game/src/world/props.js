@@ -2,9 +2,9 @@ import * as THREE from 'three';
 
 export function createOceanMaterial(preset = 'golden', reflectionTexture = null) {
   const palettes = {
-    day: [0x087f9d, 0x04344d, 0x81d8e3],
-    golden: [0x087087, 0x063144, 0xffbd72],
-    night: [0x064264, 0x020d20, 0x5297d5],
+    day: [0x087f9d, 0x075768, 0xfff0c2],
+    golden: [0x087f9d, 0x075768, 0xffe2b0],
+    night: [0x087f9d, 0x075768, 0x38c7d9],
   };
   const colors = palettes[preset] ?? palettes.golden;
   const material = new THREE.ShaderMaterial({
@@ -13,6 +13,7 @@ export function createOceanMaterial(preset = 'golden', reflectionTexture = null)
       uShallow: { value: new THREE.Color(colors[0]) },
       uDeep: { value: new THREE.Color(colors[1]) },
       uGlint: { value: new THREE.Color(colors[2]) },
+      uSunDirection: { value: new THREE.Vector3(-.5, .72, .35).normalize() },
       uEnvironment: { value: reflectionTexture },
     },
     vertexShader: `
@@ -42,6 +43,7 @@ export function createOceanMaterial(preset = 'golden', reflectionTexture = null)
       uniform vec3 uShallow;
       uniform vec3 uDeep;
       uniform vec3 uGlint;
+      uniform vec3 uSunDirection;
       uniform sampler2D uEnvironment;
       uniform float uTime;
       varying vec3 vWorldPosition;
@@ -59,8 +61,11 @@ export function createOceanMaterial(preset = 'golden', reflectionTexture = null)
         reflection = mix(uDeep, reflection, .28);
         float ripple = sin(vWorldPosition.x * 0.12 + vWorldPosition.z * 0.08 + uTime * 1.2) * 0.022;
         float sunGlint = pow(max(0.0, sin(vWorldPosition.x * 0.027 + vWorldPosition.z * 0.018 + uTime * 0.36)), 15.0);
+        vec3 halfDirection = normalize(viewDirection + normalize(uSunDirection));
+        float specular = pow(max(dot(normalize(vWorldNormal), halfDirection), 0.0), 96.0);
         vec3 color = water + vec3(ripple + vWave * 0.035);
         color = mix(color, reflection + uGlint * .16, fresnel * .48 + sunGlint * .12);
+        color += uGlint * (specular * 2.4 + sunGlint * .55);
         gl_FragColor = vec4(color, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
