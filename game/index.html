@@ -9,7 +9,7 @@
 <style>
 :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-synthesis:none}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#d78c59;color:#fff}
-body{user-select:none}#world{position:fixed;inset:0;width:100%;height:100%;display:block}
+body{user-select:none;-webkit-user-select:none}#world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #ui{position:fixed;inset:0;pointer-events:none;text-shadow:0 2px 8px #081519b8}
 .topline{position:absolute;top:24px;left:30px;display:flex;align-items:center;gap:14px;font-size:12px;letter-spacing:.18em;font-weight:800}
 .seal{width:37px;height:37px;border:1px solid #fff9;border-radius:50%;display:grid;place-items:center;color:#ffd98b;font-size:11px}
@@ -57,7 +57,40 @@ body{user-select:none}#world{position:fixed;inset:0;width:100%;height:100%;displ
 .panel:has(.settings-controls:not([hidden])){width:min(560px,92vw);padding-top:22px;padding-bottom:22px}
 #ui:has(#title-screen:not([hidden])) > :not(.screen){visibility:hidden}
 body[data-shot="signature"] #ui > :not(.screen){display:none}
-@media(max-width:700px){.topline{top:12px;left:12px}.district{display:none}#objective{left:12px;top:62px;width:260px}#minimap{right:12px;top:12px;width:132px;height:132px}.vitals{left:12px;bottom:14px}.map-card{display:none}#wanted{right:160px;top:18px}.panel{margin:0}.logo{font-size:40px}}
+#touch-controls{display:none;position:absolute;inset:0;z-index:5;pointer-events:none}
+body[data-touch="1"] #touch-controls{display:block}
+#ui:has(.screen:not([hidden])) #touch-controls{display:none}
+#touch-look{position:absolute;left:50%;right:0;top:0;bottom:0;pointer-events:auto;touch-action:none}
+.touch-pad{position:absolute;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:132px;height:132px;border-radius:50%;border:1px solid #ffe1a866;background:radial-gradient(circle,#1b333bc4,#0c1c22a1);box-shadow:inset 0 0 22px #07161d80,0 8px 30px #05101480;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);pointer-events:auto;touch-action:none;display:grid;place-items:center}
+.touch-pad:before,.touch-pad:after{content:"";position:absolute;background:#ffe3ad40}
+.touch-pad:before{width:1px;height:78%;top:11%}.touch-pad:after{height:1px;width:78%;left:11%}
+.touch-knob{width:58px;height:58px;border-radius:50%;border:1px solid #ffe6b0;border-top-color:#fff1c9;border-left-color:#ffbc65;background:linear-gradient(145deg,#f9d69e5c,#12282e9c);box-shadow:0 3px 16px #061116a6;pointer-events:none}
+.touch-cluster{position:absolute;display:grid;gap:7px;pointer-events:none}
+.touch-cluster-right{right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));grid-template-columns:88px 88px;grid-template-rows:46px 46px 40px 40px}
+.touch-btn{pointer-events:auto;touch-action:none;cursor:pointer;border:1px solid #ffe0a470;border-radius:14px;background:linear-gradient(160deg,#1b343bd9,#0d1e24c9);color:#ffe9c4;font:800 10px/1 system-ui,sans-serif;letter-spacing:.1em;text-align:center;box-shadow:0 7px 20px #0410159c,inset 0 1px #fff3;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:grid;place-items:center;padding:0 3px}
+.touch-btn.pressed{background:linear-gradient(160deg,#f5c77bdd,#bd7c46d9);color:#14251f;border-color:#fff0c8;box-shadow:0 0 20px #f6bc6e80}
+.touch-enter{grid-area:1/1}.touch-brake{grid-area:2/1}.touch-act{grid-area:3/1}.touch-reload{grid-area:4/1}.touch-fire{grid-area:1/2/3/3}.touch-weapon{grid-area:3/2}.touch-pause{grid-area:4/2}
+.touch-fire{border-color:#ffc486aa;color:#ffe3ad;font-size:12px;background:linear-gradient(160deg,#6d3b32db,#2b1c25d4)}
+.touch-fire.pressed{background:linear-gradient(160deg,#ff8a6e,#efac4b)}
+@media(max-width:700px){
+.topline{top:calc(8px + env(safe-area-inset-top,0px));left:12px;font-size:10px;gap:8px}.seal{width:29px;height:29px;font-size:9px}.district{display:none}
+#objective{left:12px;top:calc(46px + env(safe-area-inset-top,0px));width:190px;padding:8px 9px;font-size:10px;line-height:1.35}#objective b{font-size:8px;letter-spacing:.14em}
+#minimap{right:12px;top:calc(8px + env(safe-area-inset-top,0px));width:104px;height:104px}
+#wanted{right:12px;top:calc(120px + env(safe-area-inset-top,0px));font-size:15px;letter-spacing:1px;white-space:nowrap}
+#feed{right:12px;top:calc(152px + env(safe-area-inset-top,0px));width:150px;font-size:9px;line-height:1.45}
+#weapon{left:12px;right:auto;bottom:auto;top:calc(248px + env(safe-area-inset-top,0px));text-align:left;font-size:10px;line-height:1.3}#weapon small{font-size:9px}
+.vitals{left:12px;top:calc(150px + env(safe-area-inset-top,0px));bottom:auto;width:190px}.barrow{font-size:8px;gap:7px;margin:4px 0}.bar{width:78px;height:5px}
+#money{left:12px;right:auto;top:calc(205px + env(safe-area-inset-top,0px));bottom:auto;text-align:left;font-size:16px}#money small{font-size:8px}
+#toast{top:calc(26% + env(safe-area-inset-top,0px));width:max-content;max-width:88vw;font-size:10px;text-align:center}
+#dialogue{left:50%;bottom:calc(296px + env(safe-area-inset-bottom,0px));width:min(340px,88vw);padding:9px 11px;font-size:11px;line-height:1.35}
+#prompt{left:50%;bottom:calc(260px + env(safe-area-inset-bottom,0px));padding:6px 9px;font-size:9px;white-space:nowrap}
+#radio{bottom:calc(240px + env(safe-area-inset-bottom,0px));font-size:9px;white-space:nowrap}
+.map-card,#pause-screen .map-card{display:none}
+#title-screen{padding-left:4vw}.panel{width:min(370px,92vw);margin:0;padding:18px 20px;border-radius:18px}.panel:has(.settings-controls:not([hidden])){width:min(370px,94vw);padding:16px 18px}
+.logo{font-size:38px}.subtitle{font-size:10px;margin:10px 0 16px}.tiny{font-size:9px;margin-top:12px}.screen-title{left:12px;top:12px}
+.menu-buttons{gap:6px}.menu-buttons button,.menu-buttons .action{padding:10px 12px;font-size:11px}
+.settings-controls{max-height:46vh;gap:6px;font-size:9px}.settings-controls label{gap:6px}.settings-controls input:not([type=checkbox]),.settings-controls select{width:50%}
+}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
 </head>
@@ -76,6 +109,19 @@ body[data-shot="signature"] #ui > :not(.screen){display:none}
   <section id="info-screen" class="screen" hidden><div class="panel"><div class="eyebrow" id="info-eyebrow">FIELD NOTES</div><h2 class="logo" style="font-size:38px" id="info-title">CONTROLS</h2><p class="subtitle" id="info-copy">WASD move · Shift sprint · Space vault<br>Mouse aim and orbit · Click fire · F enter or exit<br>1–4 weapons · R reload · E activities · Esc pause</p><div id="settings-controls" class="settings-controls" hidden><label>MASTER VOLUME <input id="volume-range" type="range" min="0" max="1" step=".01" value=".32"></label><label>MUSIC <input id="music-range" type="range" min="0" max="1" step=".01" value=".55"></label><label>SOUND EFFECTS <input id="effects-range" type="range" min="0" max="1" step=".01" value=".8"></label><label>AMBIENCE <input id="ambient-range" type="range" min="0" max="1" step=".01" value=".35"></label><label>CAMERA SENSITIVITY <input id="sensitivity-range" type="range" min=".0008" max=".006" step=".0001" value=".0024"></label><label>GRAPHICS QUALITY <select id="quality-select"><option value="low">LOW · SMOOTH DRIVE</option><option value="medium">MEDIUM</option><option value="high">HIGH · SOFT SHADOWS</option><option value="ultra">ULTRA</option></select></label><label>SHADOW QUALITY <select id="shadow-select"><option value="low">LOW</option><option value="medium">MEDIUM</option><option value="high">HIGH</option></select></label><label>RESOLUTION SCALE <input id="resolution-range" type="range" min=".6" max="1.65" step=".05" value="1.25"></label><label>FRAME LIMIT <select id="fps-select"><option value="0">UNLIMITED</option><option value="30">30 FPS</option><option value="60">60 FPS</option></select></label><label>TIME OF DAY <select id="time-select"><option value="day">TROPICAL DAY</option><option value="golden">GOLDEN HOUR</option><option value="night">MIDNIGHT NEON</option></select></label><label>INVERT CAMERA Y <input id="invert-y" type="checkbox"></label><label>MOVE FORWARD <button type="button" data-bind="forward">W</button></label><label>MOVE BACK <button type="button" data-bind="reverse">S</button></label><label>TURN LEFT <button type="button" data-bind="left">A</button></label><label>TURN RIGHT <button type="button" data-bind="right">D</button></label><label>ENTER VEHICLE <button type="button" data-bind="vehicle">F</button></label><label>ACTIVITY <button type="button" data-bind="activity">E</button></label><label>MAP / PAUSE <button type="button" data-bind="map">M</button></label></div><div class="menu-buttons"><button class="primary" data-action="back">GOT IT</button></div></div></section>
   <section id="result-screen" class="screen" hidden><div class="panel"><div class="eyebrow">THE STREET REMEMBERS</div><h2 class="logo" style="font-size:42px" id="result-title">FLATLINED</h2><p class="subtitle" id="result-copy">St. Aurelia Clinic patched you up. The city still wants its money.</p><div class="menu-buttons"><button class="primary" data-action="respawn">BACK TO THE STREET</button></div></div></section>
   <section id="goodbye-screen" class="screen" hidden><div class="panel"><div class="eyebrow">SOLANA KEYS · UNTIL THE TIDE TURNS</div><h2 class="logo" style="font-size:42px">TAKE IT EASY.</h2><p class="subtitle">The city will still be here when you get back.</p><div class="menu-buttons"><button class="primary" data-action="goodbye-back">BACK TO THE TITLE</button></div></div></section>
+  <div id="touch-controls">
+    <div id="touch-look"></div>
+    <div id="touch-pad" class="touch-pad"><div id="touch-knob" class="touch-knob"></div></div>
+    <div class="touch-cluster touch-cluster-right">
+      <button type="button" class="touch-btn touch-enter" data-touch-action="vehicle">ENTER</button>
+      <button type="button" class="touch-btn touch-brake" data-touch-action="brake">SPRINT</button>
+      <button type="button" class="touch-btn touch-act" data-touch-action="activity">ACT</button>
+      <button type="button" class="touch-btn touch-reload" data-touch-action="reload">RELOAD</button>
+      <button type="button" class="touch-btn touch-fire" data-touch-action="fire">FIRE</button>
+      <button type="button" class="touch-btn touch-weapon" data-touch-action="weapon">GUN</button>
+      <button type="button" class="touch-btn touch-pause" data-touch-action="pause">PAUSE</button>
+    </div>
+  </div>
 </div>
 <script type="module" src="./src/main.js"></script>
 </body>

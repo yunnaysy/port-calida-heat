@@ -11,6 +11,7 @@
 // - docks: Lantern-lit harbor mission standoff at the docks, cranes and cargo silhouettes framed by the same pink golden-hour palette.
 // - title: Title-card vista with the coupe, foreground palm, and signature pink Vice City sunset / Golden Hour look (default preset 'golden').
 // Global art direction: keep the pink Vice City sunset / Golden Hour look intact (default lighting preset 'golden'); never retune toward teal or orange-sun.
+// Gameplay notes: vehicle entry no longer hits a policeVisible TDZ error, render frames recover from exceptions, and phones get on-screen touch controls while desktop keyboard/mouse stays unchanged.
 
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

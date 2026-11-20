@@ -105,7 +105,9 @@ export function createMenus(callbacks) {
       else if (action === 'controls') {
         returnTo = title.hidden ? 'pause' : 'title'; settingsPanel.hidden = true;
         infoTitle.textContent = 'CONTROLS';
-        infoCopy.innerHTML = 'WASD move or steer · Shift sprint · Space vault<br>Mouse orbit and aim · Left click fire · F enter or exit<br>1–4 weapons · R reload · E activities · Esc pause';
+        infoCopy.innerHTML = document.body.dataset.touch === '1'
+          ? 'Left pad move or steer · Drag the right side to look<br>FIRE to shoot · ENTER to get in or out · ACT for activities<br>BRAKE brakes in a car and sprints on foot · GUN, RELOAD, PAUSE'
+          : 'WASD move or steer · Shift sprint · Space vault<br>Mouse orbit and aim · Left click fire · F enter or exit<br>1–4 weapons · R reload · E activities · Esc pause';
         info.hidden = false; title.hidden = true; pause.hidden = true; goodbye.hidden = true;
       } else if (action === 'settings') {
         returnTo = title.hidden ? 'pause' : 'title'; settingsPanel.hidden = false;

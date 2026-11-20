@@ -45,7 +45,7 @@ const state = { player, cash: 2450, respect: 0, mission: 0, weapons: [true, true
 const input = createInput();
 const hud = createHud();
 const minimap = createMinimap(document.getElementById('minimap'), document.getElementById('pause-map'), document.getElementById('title-map'));
-const follow = createFollowCamera(camera, canvas);
+const follow = createFollowCamera(camera, canvas, input.isTouch);
 const audio = createAudio();
 const particles = createParticles(scene, random);
 const wanted = createWanted();
@@ -230,11 +230,11 @@ function continueGame() {
 }
 
 function resume() {
-  screen = 'play'; menus.hideAll(); last = performance.now(); follow.release();
+  screen = 'play'; menus.hideAll(); last = performance.now(); follow.release(); input.clearTouches();
 }
 
 function restartMission() {
-  screen = 'play'; menus.hideAll(); last = performance.now(); follow.release();
+  screen = 'play'; menus.hideAll(); last = performance.now(); follow.release(); input.clearTouches();
   if (!mission.completed) mission.begin();
   refreshMission();
   hud.notify(mission.completed ? 'STORY COMPLETE · FREE ROAM CONTINUES' : `JOB ${mission.index + 1} · RESTARTED`);
@@ -245,7 +245,7 @@ function goToTitle() {
   titleCar.mesh.visible = true;
   follow.state.distance = 27; follow.state.yaw = -.18;
   if (player.vehicle) { player.vehicle = null; player.onFoot = true; player.mesh.visible = true; }
-  follow.release(); menus.showTitle();
+  follow.release(); input.clearTouches(); menus.showTitle();
 }
 
 function saveAtSafehouse() {
@@ -266,7 +266,7 @@ function saveAtSafehouse() {
 function respawn() {
   player.health = 100; player.armour = 35; player.mesh.visible = true; player.mesh.position.set(-46, 0, -46);
   if (player.vehicle) player.vehicle = null;
-  player.onFoot = true; wanted.clear(); screen = 'play'; menus.hideAll(); hud.notify('ST. AURELIA CLINIC · $250 CARE FEE');
+  player.onFoot = true; wanted.clear(); screen = 'play'; menus.hideAll(); input.clearTouches(); hud.notify('ST. AURELIA CLINIC · $250 CARE FEE');
   state.cash = Math.max(0, state.cash - 250);
 }
 
@@ -303,7 +303,7 @@ function hitPlayer(damage, armourDamage) {
   player.armour -= absorbed; player.health -= Math.max(0, damage - absorbed * .55);
   player.invulnerable = .18;
   if (player.health <= 0) {
-    player.health = 0; screen = 'dead'; follow.release();
+    player.health = 0; screen = 'dead'; follow.release(); input.clearTouches();
     document.getElementById('result-title').textContent = 'FLATLINED';
     document.getElementById('result-copy').textContent = 'St. Aurelia Clinic patched you up. The city still wants its money.';
     menus.showDeath();
@@ -361,13 +361,15 @@ function interact() {
 }
 
 function handleInput(dt) {
-  if (input.take('Escape')) {
-    if (screen === 'play') { screen = 'paused'; menus.showPause(); follow.release(); }
+  if (input.takePause()) {
+    if (screen === 'play') { screen = 'paused'; menus.showPause(); follow.release(); input.clearTouches(); }
     else if (screen === 'paused') resume();
   }
   if (screen === 'dead') return;
-  if (screen === 'paused' || screen === 'title') { input.clearPressed(); return; }
+  if (screen === 'paused' || screen === 'title') { input.clearPressed(); input.clearTouches(); return; }
   if (screen !== 'play') return;
+  const look = input.consumeLook();
+  if (look.x || look.y) follow.applyLook(look.x, look.y);
   if (shot === 'chase' && player.vehicle) {
     player.vehicle.mesh.position.x += 31 * dt;
     player.vehicle.mesh.position.z += Math.sin(clock * 2.3) * .55 * dt;
@@ -399,7 +401,11 @@ function handleInput(dt) {
   for (const vehicle of vehicles) if (vehicle.mesh.userData.headlightMaterial) vehicle.mesh.userData.headlightMaterial.emissiveIntensity = headlights ? 3 : .15;
   hud.notify(headlights ? 'HEADLIGHTS ON' : 'HEADLIGHTS OFF');
   }
-  if (input.take('KeyR')) combat.reload();
+  if (input.take('KeyR') || input.takeTouch('reload')) combat.reload();
+  if (input.takeTouch('weapon')) {
+    const owned = state.weapons.map((ownedWeapon, index) => ownedWeapon ? index : -1).filter(index => index >= 0);
+    if (owned.length) combat.equip(owned[(owned.indexOf(combat.selected) + 1) % owned.length]);
+  }
   if (input.take('Digit1')) combat.equip(0);
   if (input.take('Digit2')) combat.equip(1);
   if (input.take('Digit3')) combat.equip(2);
@@ -411,8 +417,9 @@ function handleInput(dt) {
   if (player.vehicle) {
     const car = player.vehicle;
     const old = car.mesh.position.clone();
-    if (moving) car.speed = Math.min(35, car.speed + 18 * dt);
-    else if (movingBack) car.speed = Math.max(-12, car.speed - 12 * dt);
+    const braking = input.touch.brake;
+    if (moving && !braking) car.speed = Math.min(35, car.speed + 18 * dt);
+    else if (movingBack || braking) car.speed = Math.max(-12, car.speed - (braking && !movingBack ? 22 : 12) * dt);
     else car.speed *= Math.exp(-1.3 * dt);
     car.yaw += steering * dt * (1.3 + Math.min(Math.abs(car.speed) / 16, 1.5)) * (car.speed < 0 ? -1 : 1);
     tickVehicle(car, dt);
@@ -431,7 +438,7 @@ function handleInput(dt) {
     if (steering) movement.addScaledVector(right, steering);
     const isMoving = movement.lengthSq() > .01;
     let sprinting = false;
-    const wantsSprint = input.down('ShiftLeft') || input.down('ShiftRight');
+    const wantsSprint = input.down('ShiftLeft') || input.down('ShiftRight') || input.touch.brake;
     if (isMoving) {
       movement.normalize();
       sprinting = wantsSprint && (player.stamina ?? 1) > 0.08 && !player.exhausted;
@@ -451,7 +458,8 @@ function handleInput(dt) {
       player.stamina = Math.min(1, (player.stamina ?? 1) + dt * .3);
       if (player.exhausted && player.stamina > .35) player.exhausted = false;
     }
-    if (input.take('Space') && player.jump <= 0) player.jump = .45;
+    const jumpKey = input.take('Space'), jumpTouch = input.takeTouch('jump');
+    if ((jumpKey || jumpTouch) && player.jump <= 0) player.jump = .45;
     animatePlayer(player, dt, isMoving, combat.selected > 0, sprinting, scene.userData.lightingPreset);
   }
   const activePosition = player.vehicle?.mesh.position ?? player.mesh.position;
@@ -515,8 +523,8 @@ function updateGame(dt) {
     police.officers.forEach(officer => { officer.mesh.visible = false; });
     hud.clearFeed();
   }
-  wanted.setHidden?.(Boolean(player.vehicle) && !policeVisible && wanted.stars > 0);
   const policeVisible = policeClose && policeNearby;
+  wanted.setHidden?.(Boolean(player.vehicle) && !policeVisible && wanted.stars > 0);
   wanted.tick(dt, policeVisible, Boolean(player.vehicle));
   state.wantedStars = wanted.stars;
   if (wanted.stars >= 4) audio.siren(police.cruisers[0]?.mesh.position, position);
@@ -560,15 +568,16 @@ function updateGame(dt) {
 }
 
 function contextualPrompt(position) {
-  if (player.vehicle) return 'F  ·  EXIT VEHICLE';
+  const key = input.isTouch ? 'TAP ENTER' : 'F', activityKey = input.isTouch ? 'TAP ACT' : 'E';
+  if (player.vehicle) return `${key}  ·  EXIT VEHICLE`;
   let nearest = null, nearestDistance = 11;
   for (const car of vehicles) {
     const distance = car.mesh.position.distanceTo(position);
     if (distance < nearestDistance) { nearest = car; nearestDistance = distance; }
   }
-  if (nearest) return `F  ·  ENTER ${nearest.kind.toUpperCase()}`;
-  if (Math.hypot(position.x + 58, position.z + 55) < 14) return 'F  ·  VISIT CALIDA ARMS';
-  if (Math.hypot(position.x - 28, position.z - 36) < 20 || Math.hypot(position.x - 276, position.z + 276) < 20) return 'E  ·  START ACTIVITY';
+  if (nearest) return `${key}  ·  ENTER ${nearest.kind.toUpperCase()}`;
+  if (Math.hypot(position.x + 58, position.z + 55) < 14) return `${key}  ·  VISIT CALIDA ARMS`;
+  if (Math.hypot(position.x - 28, position.z - 36) < 20 || Math.hypot(position.x - 276, position.z + 276) < 20) return `${activityKey}  ·  START ACTIVITY`;
   return '';
 }
 
@@ -609,6 +618,12 @@ function draw() {
   if (frameLimit > 0 && now - last < 1000 / frameLimit) { requestAnimationFrame(draw); return; }
   const dt = Math.min((now - last) / 1000, .05);
   last = now;
+  try { drawFrame(dt); }
+  catch (error) { console.error('Port Calida Heat: frame skipped, continuing.', error); }
+  requestAnimationFrame(draw);
+}
+
+function drawFrame(dt) {
   if (screen === 'play') updateGame(dt);
   else {
     clock += dt; particles.tick(dt);
@@ -666,7 +681,6 @@ function draw() {
   else if (shot === 'signature' && cinematicGlow) city.sky.glow.position.set(-276, 17, -270);
   if (screen === 'play') titleCar.mesh.visible = false;
   composer.render(camera, shot === 'signature' || screen === 'title', scene.userData.lightingPreset);
-  requestAnimationFrame(draw);
 }
 
 function loadContinueState() {

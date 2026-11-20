@@ -5,6 +5,8 @@ export function createHud() {
   const objective = byId('objective-text'), objectiveLabel = byId('objective').querySelector('b'), wanted = byId('wanted');
   const feed = byId('feed'), toast = byId('toast'), dialogue = byId('dialogue'), prompt = byId('prompt');
   const radio = byId('radio');
+  const touchVehicleButton = document.querySelector('[data-touch-action="vehicle"]');
+  const touchBrakeButton = document.querySelector('[data-touch-action="brake"]');
   const feedLines = [];
   let toastTimer = 0, dialogueTimer = 0, radioTimer = 0;
   return {
@@ -41,6 +43,10 @@ export function createHud() {
       document.querySelector('#money span').textContent = state.cash.toLocaleString();
       const weapon = WEAPONS[combat.selected];
       byId('weapon').innerHTML = `${weapon.name}<small>${weapon.label} · ${Number.isFinite(combat.ammunition) ? combat.ammunition : 'READY'}</small>`;
+      const vehicleLabel = state.player.vehicle ? 'EXIT' : 'ENTER';
+      if (touchVehicleButton && touchVehicleButton.textContent !== vehicleLabel) touchVehicleButton.textContent = vehicleLabel;
+      const brakeLabel = state.player.vehicle ? 'BRAKE' : 'SPRINT';
+      if (touchBrakeButton && touchBrakeButton.textContent !== brakeLabel) touchBrakeButton.textContent = brakeLabel;
       byId('reticle').style.display = combat.selected > 0 && !state.player.vehicle ? 'block' : 'none';
       byId('district').textContent = state.player.mesh.position.z > 220 && Math.abs(state.player.mesh.position.x) > 400 ? 'THE CAUSEWAY · SOLANA KEYS' :
         state.player.mesh.position.x < -330 ? 'THE PORT DOCKS · SOLANA KEYS' :
