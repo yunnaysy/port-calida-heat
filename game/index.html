@@ -28,7 +28,7 @@ body{user-select:none;-webkit-user-select:none}#world{position:fixed;inset:0;wid
 #feed{position:absolute;right:34px;top:222px;width:280px;text-align:right;font-size:11px;line-height:1.75;color:#ffdc9d}
 #radio{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);font-size:10px;letter-spacing:.2em;color:#ffe0a2;opacity:0}
 #dialogue{position:absolute;left:50%;bottom:87px;transform:translateX(-50%);width:min(590px,80vw);padding:14px 18px;background:linear-gradient(90deg,#071b20e8,#071b20b8);border-left:3px solid #f4b65f;text-align:center;font-size:13px}
-#prompt{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);padding:8px 13px;border:1px solid #f2c56f88;background:#102527d9;color:#ffe1a0;font-size:10px;font-weight:800;letter-spacing:.14em}
+#prompt{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);padding:8px 13px;border:1px solid #f2c56f88;background:#102527d9;color:#ffe1a0;font-size:10px;font-weight:800;letter-spacing:.14em}
 #prompt[hidden]{display:none}
 #toast.mission-complete{border-color:#f6d477;color:#ffe8a7;box-shadow:0 0 24px #e7a84770;animation:gold-notice 1.1s ease-out}
 @keyframes gold-notice{50%{transform:translate(-50%,-55%) scale(1.05);box-shadow:0 0 34px #ffd36b99}}
@@ -55,7 +55,7 @@ body{user-select:none;-webkit-user-select:none}#world{position:fixed;inset:0;wid
 .settings-controls input:not([type=checkbox]),.settings-controls select{width:53%;accent-color:#0a84ff}
 .settings-controls input[type=checkbox]{accent-color:#0a84ff}.settings-controls button{width:53%;cursor:pointer;border:1px solid #ffffff36;border-radius:9px;background:#ffffff0b;color:#fff;text-align:center;padding:6px 9px;font:700 10px system-ui,sans-serif;letter-spacing:.08em}.settings-controls button:focus-visible,.settings-controls select:focus-visible,.settings-controls input:focus-visible{outline:2px solid #0a84ff;outline-offset:2px}
 .panel:has(.settings-controls:not([hidden])){width:min(560px,92vw);padding-top:22px;padding-bottom:22px}
-#ui:has(#title-screen:not([hidden])) > :not(.screen){visibility:hidden}
+#ui:has(.screen:not([hidden])) > :not(.screen){visibility:hidden}
 body[data-shot="signature"] #ui > :not(.screen){display:none}
 #touch-controls{display:none;position:absolute;inset:0;z-index:5;pointer-events:none}
 body[data-touch="1"] #touch-controls{display:block}

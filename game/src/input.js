@@ -1,3 +1,9 @@
+function capturePointer(element, pointerId) {
+  if (!element?.setPointerCapture) return;
+  try { element.setPointerCapture(pointerId); }
+  catch {}
+}
+
 export function isTouchDevice() {
   if (typeof window === 'undefined') return false;
   const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
@@ -46,10 +52,10 @@ export function createInput() {
       touch.axis.x = x; touch.axis.y = -y;
       if (knob) knob.style.transform = `translate(${x * range}px, ${y * range}px)`;
     };
-    const releasePad = event => { if (event.pointerId === padId) { padId = null; resetPad(); } };
+    const releasePad = event => { if (event.pointerId === padId) resetPad(); };
     pad?.addEventListener('pointerdown', event => {
       event.preventDefault(); padId = event.pointerId;
-      pad.setPointerCapture?.(event.pointerId); movePad(event);
+      capturePointer(pad, event.pointerId); movePad(event);
     });
     pad?.addEventListener('pointermove', event => { if (event.pointerId === padId) movePad(event); });
     pad?.addEventListener('pointerup', releasePad);
@@ -62,7 +68,7 @@ export function createInput() {
     look?.addEventListener('pointerdown', event => {
       event.preventDefault(); lookId = event.pointerId;
       lastX = event.clientX; lastY = event.clientY;
-      look.setPointerCapture?.(event.pointerId);
+      capturePointer(look, event.pointerId);
     });
     look?.addEventListener('pointermove', event => {
       if (event.pointerId !== lookId) return;
@@ -79,7 +85,7 @@ export function createInput() {
       const action = button.dataset.touchAction;
       button.addEventListener('pointerdown', event => {
         event.preventDefault(); event.stopPropagation();
-        button.setPointerCapture?.(event.pointerId);
+        capturePointer(button, event.pointerId);
         button.classList.add('pressed');
         if (action === 'fire') touch.firing = true;
         else if (action === 'brake') touch.brake = true;
