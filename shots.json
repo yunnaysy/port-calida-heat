@@ -1,6 +1,6 @@
 [
-  { "name": "1-chase.jpg", "query": "?shot=chase&seed=1" },
-  { "name": "2-onfoot.jpg", "query": "?shot=onfoot&seed=1" },
-  { "name": "3-mission.jpg", "query": "?shot=mission&seed=1" },
-  { "name": "4-title.jpg", "query": "?shot=title&seed=1" }
+  { "name": "1-chase.jpg", "query": "?shot=chase&preset=golden&seed=1" },
+  { "name": "2-marina.jpg", "query": "?shot=marina&preset=golden&seed=1" },
+  { "name": "3-docks.jpg", "query": "?shot=docks&preset=night&seed=1" },
+  { "name": "4-title.jpg", "query": "?shot=title&preset=golden&seed=1" }
 ]
